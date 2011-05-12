@@ -21,8 +21,3 @@ loggers:
     handlers: [console]
     level: INFO
     propagate: yes
-  trace:
-    handlers: [console]
-    level: INFO
-  autocheck.runner.AutocheckObserver:
-    level: DEBUG
