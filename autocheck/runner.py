@@ -5,14 +5,16 @@
 #   runner.py --- Run tests automatically
 #=============================================================================
 import json
+import logging
 import os
 import re
 import subprocess
-import sys
 import threading
 
 from observer.tree import TreeObserver
 
+
+log = logging.getLogger(__name__)
 
 DEFAULT_FILEPATTERN = re.compile(r'.*\.(py|txt|yaml|sql|html|js|css|feature)$')
 

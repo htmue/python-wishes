@@ -10,7 +10,8 @@ import yaml
 
 
 logging_yaml = os.path.join(os.path.dirname(__file__), 'logging.yaml')
-logging.config.dictConfig(yaml.load(open(logging_yaml)))
+if os.path.isfile(logging_yaml):
+    logging.config.dictConfig(yaml.load(open(logging_yaml)))
 
 #.............................................................................
 #   __init__.py
