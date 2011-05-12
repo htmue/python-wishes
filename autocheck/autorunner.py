@@ -2,7 +2,7 @@
 # Copyright 2011 Hans-Thomas Mueller
 # Distributed under the terms of the GNU General Public License v2
 #=============================================================================
-#   runner.py --- Run tests automatically
+#   autorunner.py --- Run tests automatically
 #=============================================================================
 import json
 import logging
@@ -130,4 +130,4 @@ def ignored_dirs_from_file(dir, name):
                     yield ignore
 
 #.............................................................................
-#   runner.py
+#   autorunner.py

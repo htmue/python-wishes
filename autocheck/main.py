@@ -11,7 +11,7 @@ import sys
 
 from nose.core import TestProgram
 
-from runner import AutocheckObserver
+from autorunner import AutocheckObserver
 
 
 log = logging.getLogger('autocheck')
