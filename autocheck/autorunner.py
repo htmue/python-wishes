@@ -70,7 +70,6 @@ class AutocheckObserver(TreeObserver):
     
     def run_wishes(self):
         args = (self.args + self.failed_wishes[:1] if self.failed_wishes else self.args) + ['--wishes']
-        print args
         match, returncode = self.run_grep(args, re.compile(r'FAILED FEATURES (.*)'))
         if match:
             self.failed_wishes = json.loads(match.group(1))
