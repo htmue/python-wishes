@@ -36,14 +36,14 @@ class EachEqualTest(unittest.TestCase):
     def test_sees_equality(self):
         matcher = EachEqual()(range(10))
         diff = list(matcher.differ(range(10)))
-        diff |should| equal_to([])
+        diff |should| be_equal_to([])
 
     def test_gets_the_differences(self):
         left = [1, 2, 3, 4]
         right = [3, 2, 1, 4]
         matcher = EachEqual()(right)
         diff = list(matcher.differ(left))
-        diff |should| equal_to([
+        diff |should| be_equal_to([
             (1, 1, 3),
             (3, 3, 1),
         ])
@@ -53,11 +53,17 @@ class EachEqualTest(unittest.TestCase):
         right = [3, 2, 1, 4]
         matcher = EachEqual()(right)
         diff = list(matcher.differ(left))
-        diff |should| equal_to([
+        diff |should| be_equal_to([
             (1, 1, 3),
             (3, 3, 1),
             (4, None, 4),
         ])
+
+
+@matcher
+def be_equal_to():
+    return (lambda x, y: x == y, '%r is %sequal to %r')
+
 
 #.............................................................................
 #   __init__.py
