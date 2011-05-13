@@ -1,0 +1,48 @@
+# -*- coding:utf-8 -*-
+# Created by Hans-Thomas on 2011-05-11.
+#=============================================================================
+#   parser.yaml --- Parser states and patterns
+#=============================================================================
+
+states:
+  start:
+  - [feature, [start_feature], feature]
+  - [null, [], null]
+
+  feature:
+  - [scenario, [start_scenario], scenario]
+  - [feature_description, [start_feature_description, data], feature_description]
+  - [null, [finish_feature], null]
+
+  feature_description:
+  - [scenario, [finish_feature_description, start_scenario], scenario]
+  - [feature_description, [data], feature_description]
+  - [null, [finish_feature_description, finish_feature], null]
+
+  scenario:
+  - [step, [start_step], step]
+  - [scenario, [finish_scenario, start_scenario], scenario]
+  - [null, [finish_scenario, finish_feature], null]
+
+  step:
+  - [step, [finish_step, start_step], step]
+  - [scenario, [finish_step, finish_scenario, start_scenario], scenario]
+  - [multiline, [start_multiline], multiline]
+  - [null, [finish_step, finish_scenario, finish_feature], null]
+
+  multiline:
+  - [multiline, [finish_multiline, finish_step], scenario]
+  - [multiline_data, [multiline_data], multiline]
+
+
+patterns:
+  feature: '\s*Feature:(.*)'
+  feature_description: '\s*(.*)'
+  scenario: '\s*Scenario:(.*)'
+  step: '\s*(Given|When|Then|And|But)\s+(.*)'
+  multiline: '(\s*""")'
+  multiline_data: '(.*)'
+  whitespace: '(\s*)$'
+
+#.............................................................................
+#   parser.yaml
