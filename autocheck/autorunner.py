@@ -2,7 +2,7 @@
 # Copyright 2011 Hans-Thomas Mueller
 # Distributed under the terms of the GNU General Public License v2
 #=============================================================================
-#   runner.py --- Run tests automatically
+#   autorunner.py --- Run tests automatically
 #=============================================================================
 import json
 import logging
@@ -70,7 +70,6 @@ class AutocheckObserver(TreeObserver):
     
     def run_wishes(self):
         args = (self.args + self.failed_wishes[:1] if self.failed_wishes else self.args) + ['--wishes']
-        print args
         match, returncode = self.run_grep(args, re.compile(r'FAILED FEATURES (.*)'))
         if match:
             self.failed_wishes = json.loads(match.group(1))
@@ -130,4 +129,4 @@ def ignored_dirs_from_file(dir, name):
                     yield ignore
 
 #.............................................................................
-#   runner.py
+#   autorunner.py
