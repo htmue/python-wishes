@@ -8,10 +8,10 @@ import logging
 import os
 import signal
 import sys
+from unittest.main import TestProgram
 
-from nose.core import TestProgram
-
-from runner import AutocheckObserver
+from autorunner import AutocheckObserver
+from testrunner import TestRunner
 
 
 log = logging.getLogger('autocheck')
@@ -39,7 +39,7 @@ def single(args):
     if '--wishes' in args:
         raise NotImplementedError('wishes runner')
     else:
-        TestProgram(argv=args)
+        TestProgram(module=None, testRunner=TestRunner, argv=args)
 
 def autocheck(args):
     handle_term()
@@ -53,11 +53,11 @@ def autocheck(args):
 
 def main(args=sys.argv):
     if '--single' in args:
+        if args[1:3] == ['-m', 'autocheck']:
+            args[1:3] = []
         args.remove('--single')
         single(args)
     else:
-        if args[0].startswith( __file__):
-            args = [os.path.abspath(sys.executable), '-m', 'autocheck.main'] + args[1:]
         autocheck(args)
 
 if __name__ == '__main__':
