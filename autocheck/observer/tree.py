@@ -8,8 +8,8 @@ import os
 import threading
 from Queue import Queue
 
+from autocheck.logger import Logger
 from autocheck.observer import Observer
-from autocheck.tracing import Logger
 
 
 class FileObserver(Observer):

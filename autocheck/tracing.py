@@ -20,25 +20,17 @@ def tracing(f, name, log=trace.debug):
         return result
     return traced_f
 
-class MetaLogger(type):
-
-    def __new__(self, classname, bases, classdict):
-        classdict.setdefault('log', logging.getLogger('%s.%s' % (classdict['__module__'], classname)))
-        return type.__new__(self, classname, bases, classdict)
-
 class MetaTracer(type):
 
     def __new__(self, classname, bases, classdict):
-        classdict.setdefault('log', logging.getLogger('%s.%s' % (classdict['__module__'], classname)))
+        log = logging.getLogger('%s.%s' % (classdict['__module__'], classname))
+        classdict.setdefault('log', log)
         if trace.isEnabledFor(logging.DEBUG):
             for f in classdict:
                 m = classdict[f]
                 if isinstance(m, types.FunctionType):
-                    classdict[f] = tracing(m, '%s.%s' % (classname, f), log=classdict['log'].debug)
+                    classdict[f] = tracing(m, '%s.%s' % (classname, f), log=log.debug)
         return type.__new__(self, classname, bases, classdict)
-
-class Logger(object):
-    __metaclass__ = MetaLogger
 
 class Tracer(object):
     __metaclass__ = MetaTracer

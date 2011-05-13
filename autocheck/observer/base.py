@@ -9,7 +9,7 @@ import hashlib
 import os.path
 import time
 
-from autocheck.tracing import Logger
+from autocheck.logger import Logger
 
 
 class Observer(Logger):
