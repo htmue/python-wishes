@@ -6,8 +6,10 @@
 import unittest
 from functools import partial
 
-from vows import should
+from should_dsl import should
+
 from wishes import loader
+from wishes.feature import Scenario
 
 
 class LoaderTest(unittest.TestCase):
@@ -88,6 +90,33 @@ class LoaderTest(unittest.TestCase):
         test_case = iter(feature).next()
         test_case.scenario.title |should| be_equal_to('Has a nice Title')
 
+    def test_can_use_custom_scenario_class(self):
+        class MyScenario(Scenario):
+            pass
+        feature = loader.load_feature('''
+        Feature: Load feature file
+          Scenario: pending
+        ''', scenario_class=MyScenario)
+        test_case = iter(feature).next()
+        test_case.scenario |should| be_instance_of(MyScenario)
+
+    def test_rejects_custom_scenario_class_that_is_not_Scenario_subclass(self):
+        class MyScenario(object):
+            pass
+        load_feature = partial(loader.load_feature, 'Feature:', scenario_class=MyScenario)
+        load_feature |should| throw(ValueError)
+    
+    def test_passes_on_steps_to_scenario_add_step_method(self):
+        calls = []
+        class MyScenario(Scenario):
+            def add_step(self, *args, **kwargs):
+                calls.append((args, kwargs))
+        feature = loader.load_feature('''
+        Feature: Load feature file
+          Scenario: with step
+            When step is defined
+        ''', scenario_class=MyScenario)
+        len(calls) |should| be(1)
 
 #.............................................................................
 #   test_loader.py

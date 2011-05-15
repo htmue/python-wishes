@@ -11,7 +11,7 @@ from cStringIO import StringIO
 import mock
 import yaml
 
-from vows import should
+from should_dsl import should
 from wishes.parser import Parser
 
 

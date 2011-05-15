@@ -13,13 +13,19 @@ from parser import Parser, LogHandler
 
 class Handler(LogHandler):
     
-    def __init__(self, test_case_class=None):
+    def __init__(self, test_case_class=None, scenario_class=None):
         if test_case_class is None:
             self.TestCase = unittest.TestCase
         elif not issubclass(test_case_class, unittest.TestCase):
             raise ValueError('%r is not subclass of unittest.TestCase' % test_case_class)
         else:
             self.TestCase = test_case_class
+        if scenario_class is None:
+            self.Scenario = Scenario
+        elif not issubclass(scenario_class, Scenario):
+            raise ValueError('%r is not subclass of Scenario' % scenario_class)
+        else:
+            self.Scenario = scenario_class
     
     def start_parse(self, name):
         self.feature_name = name
@@ -39,10 +45,13 @@ class Handler(LogHandler):
     
     def start_scenario(self, title):
         self.scenario_method = self.make_scenario_method_name(title)
-        self.scenario = Scenario(title)
+        self.scenario = self.Scenario(title)
     
     def finish_scenario(self):
         self.Feature.add_scenario(self.scenario_method, self.scenario)
+    
+    def start_step(self, kind, statement):
+        self.scenario.add_step(kind, statement)
     
     def make_feature_name(self, title):
         return 'Feature_' + slugify(title)
@@ -58,8 +67,8 @@ def slugify(value):
 
 class Loader(object):
     
-    def load_feature(self, feature, test_case_class=None):
-        handler = Handler(test_case_class)
+    def load_feature(self, feature, test_case_class=None, scenario_class=None):
+        handler = Handler(test_case_class, scenario_class)
         parser = Parser(handler)
         parser.parse(feature.strip())
         return handler.suite
