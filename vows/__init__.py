@@ -3,10 +3,9 @@
 #=============================================================================
 #   __init__.py --- Vows API promises, tests support code
 #=============================================================================
-import unittest
 from itertools import izip_longest
 
-from should_dsl import matcher, should
+from should_dsl import matcher
 
 
 @matcher
@@ -31,39 +30,31 @@ class EachEqual(object):
         return 'sequences differ\n\t' + self.diff
 
 
-class EachEqualTest(unittest.TestCase):
-    
-    def test_sees_equality(self):
-        matcher = EachEqual()(range(10))
-        diff = list(matcher.differ(range(10)))
-        diff |should| be_equal_to([])
-
-    def test_gets_the_differences(self):
-        left = [1, 2, 3, 4]
-        right = [3, 2, 1, 4]
-        matcher = EachEqual()(right)
-        diff = list(matcher.differ(left))
-        diff |should| be_equal_to([
-            (1, 1, 3),
-            (3, 3, 1),
-        ])
-
-    def test_gets_the_differences_with_different_len(self):
-        left = [1, 2, 3]
-        right = [3, 2, 1, 4]
-        matcher = EachEqual()(right)
-        diff = list(matcher.differ(left))
-        diff |should| be_equal_to([
-            (1, 1, 3),
-            (3, 3, 1),
-            (4, None, 4),
-        ])
-
-
 @matcher
 def be_equal_to():
     return (lambda x, y: x == y, '%r is %sequal to %r')
 
+
+@matcher
+class AssertCalledOnceWith(object):
+    name = 'be_called_once_with'
+    
+    def __call__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+        return self
+    
+    def match(self, given):
+        try:
+            given.assert_called_once_with(*self.args, **self.kwargs)
+        except AssertionError as error:
+            self.error = error
+            return False
+        else:
+            return True
+    
+    def message_for_failed_should(self):
+        return str(self.error)
 
 #.............................................................................
 #   __init__.py
