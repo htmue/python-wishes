@@ -3,23 +3,26 @@
 #=============================================================================
 #   feature.py --- Feature test case
 #=============================================================================
-import unittest
-
-
-class FeatureTest(unittest.TestCase):
+class FeatureTest(object):
+    scenarios = dict()
     
     def runTest(self):
-        if self.scenario_method == 'runTest':
+        if self.is_empty:
             self.skipTest('no scenarios defined')
         self.scenario.run(self)
     
     @property
-    def scenario_method(self):
-        return self.id().rsplit('.', 1)[1]
-
+    def is_empty(self):
+        return self._testMethodName == 'runTest'
+    
     @property
     def scenario(self):
-        return self.scenarios[self.scenario_method]
+        return self.scenarios[self._testMethodName]
+    
+    @classmethod
+    def add_scenario(self, methodName, scenario):
+        setattr(self, methodName, self.runTest)
+        self.scenarios[methodName] = scenario
 
 
 class Scenario(object):

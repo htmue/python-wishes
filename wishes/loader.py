@@ -12,33 +12,43 @@ from parser import Parser, LogHandler
 
 
 class Handler(LogHandler):
-
+    
+    def __init__(self, test_case_class=None):
+        if test_case_class is None:
+            self.TestCase = unittest.TestCase
+        elif not issubclass(test_case_class, unittest.TestCase):
+            raise ValueError('%r is not subclass of unittest.TestCase' % test_case_class)
+        else:
+            self.TestCase = test_case_class
+    
     def start_parse(self, name):
         self.feature_name = name
         self.suite = None
-
+    
     def finish_parse(self):
         self.Feature = None
-
+    
     def start_feature(self, title):
-        class Feature(FeatureTest):
+        class Feature(FeatureTest, self.TestCase):
             pass
-        Feature.__name__ = 'Feature_' + slugify(title)
+        Feature.__name__ = self.make_feature_name(title)
         self.Feature = Feature
-        self.scenarios = []
-
+    
     def finish_feature(self):
-        self.Feature.scenarios = dict(self.scenarios)
         self.suite = unittest.defaultTestLoader.loadTestsFromTestCase(self.Feature)
-
+    
     def start_scenario(self, title):
-        self.scenario_method = 'test_Scenario_' + slugify(title)
+        self.scenario_method = self.make_scenario_method_name(title)
         self.scenario = Scenario(title)
-
+    
     def finish_scenario(self):
-        self.scenarios.append((self.scenario_method, self.scenario))
-        setattr(self.Feature, self.scenario_method, self.Feature.runTest)
-
+        self.Feature.add_scenario(self.scenario_method, self.scenario)
+    
+    def make_feature_name(self, title):
+        return 'Feature_' + slugify(title)
+    
+    def make_scenario_method_name(self, title):
+        return 'test_Scenario_' + slugify(title)
 
 def slugify(value):
     value = unicodedata.normalize('NFKD', value.decode('utf-8')).encode('ascii', 'ignore')
@@ -48,8 +58,8 @@ def slugify(value):
 
 class Loader(object):
     
-    def load_feature(self, feature):
-        handler = Handler()
+    def load_feature(self, feature, test_case_class=None):
+        handler = Handler(test_case_class)
         parser = Parser(handler)
         parser.parse(feature.strip())
         return handler.suite
