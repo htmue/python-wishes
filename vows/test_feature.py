@@ -115,5 +115,54 @@ class FeatureTest(unittest.TestCase):
         result.wasSuccessful() |should| be(True)
         world.multiline |should| be_equal_to('multiline content\n')
 
+    def test_can_run_feature_with_hashes_step(self):
+        @step('step with hashes')
+        def step_with_hashes(step):
+            world.hashes = step.hashes
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario: with multiline step
+            Given a step with hashes
+              | first   | second    | third     |
+              | first 1 | second 1  | third 1   |
+              | first 2 | second 2  | third 2   |
+        ''')
+        world.hashes = None
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(1)
+        result.wasSuccessful() |should| be(True)
+        world.hashes |should| each_be_equal_to([
+            dict(first='first 1', second='second 1', third='third 1'),
+            dict(first='first 2', second='second 2', third='third 2'),
+        ])
+
+    def test_can_run_feature_with_hashes_in_background_step(self):
+        @step('step with hashes')
+        def step_with_hashes(step):
+            world.hashes = step.hashes
+        @step('here it is')
+        def here_it_is(step):
+            pass
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Background: with multiline step
+            Given a step with hashes
+              | first   | second    | third     |
+              | first 1 | second 1  | third 1   |
+              | first 2 | second 2  | third 2   |
+          Scenario: with defined step
+            And here it is
+        ''')
+        world.hashes = None
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(1)
+        result.wasSuccessful() |should| be(True)
+        world.hashes |should| each_be_equal_to([
+            dict(first='first 1', second='second 1', third='third 1'),
+            dict(first='first 2', second='second 2', third='third 2'),
+        ])
+
 #.............................................................................
 #   test_feature.py

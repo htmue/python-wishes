@@ -136,5 +136,26 @@ class LoaderTest(unittest.TestCase):
             ('Given', 'a multiline step'), dict(multilines=['multiline content\n'])
         ))
 
+    def test_passes_on_hashes_to_scenario_add_step_method(self):
+        calls = []
+        class MyScenario(Scenario):
+            def add_step(self, *args, **kwargs):
+                calls.append((args, kwargs))
+        feature = loader.load_feature('''
+        Feature: with multiline scenarnio
+          Scenario: with multiline step
+            Given a step with hashes
+              | first   | second    | third     |
+              | first 1 | second 1  | third 1   |
+              | first 2 | second 2  | third 2   |
+        ''', scenario_class=MyScenario)
+        len(calls) |should| be(1)
+        calls[0] |should| each_be_equal_to((
+            ('Given', 'a step with hashes'), dict(hashes=[
+                dict(first='first 1', second='second 1', third='third 1'),
+                dict(first='first 2', second='second 2', third='third 2'),
+            ])
+        ))
+
 #.............................................................................
 #   test_loader.py

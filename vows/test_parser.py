@@ -16,7 +16,7 @@ from wishes.parser import Parser, ParseError
 
 
 class ParserCallbackVowsMeta(type):
-    feature_callbacks_data = yaml.load(open(os.path.join(os.path.dirname(__file__), 'test_parser_callbacks.yaml')))
+    feature_callbacks_data = yaml.load(open(os.path.splitext(__file__)[0] + '.yaml'))
     
     def __new__(self, classname, bases, classdict):
         for key, data in self.feature_callbacks_data.iteritems():
