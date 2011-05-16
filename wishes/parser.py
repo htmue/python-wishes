@@ -149,6 +149,19 @@ class Parser(object):
             raise ParseError('invalid dedent in multiline: %r', line)
         self.handler.data(line[self.multiline_indent:])
     
+    def start_hash(self):
+        self.handler.start_hash(*self.get_hash_line_parts())
+    
+    def finish_hash(self):
+        self.handler.finish_hash()
+    
+    def hash_line(self):
+        self.handler.hash_data(*self.get_hash_line_parts())
+    
+    def get_hash_line_parts(self):
+        line = self.match.group(1).rstrip('|')
+        return tuple(part.strip() for part in line.split('|'))
+    
     def stripped_groups(self):
         return tuple(arg.strip() for arg in self.match.groups())
 

@@ -483,5 +483,47 @@ parses Feature with Background after multiline Step:
   - [finish_parse, [], {}]
 
 
+parses hashes:
+  input: |
+    Feature: Parse hashes
+      Scenario: Hashes 
+        Given there is a step
+          | with | a | hash | line |
+
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [Parse hashes], {}]
+  - [start_scenario, [Hashes], {}]
+  - [start_step, [Given, there is a step], {}]
+  - [start_hash, [with, a, hash, line], {}]
+  - [finish_hash, [], {}]
+  - [finish_step, [], {}]
+  - [finish_scenario, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+parses hashes with content:
+  input: |
+    Feature: Parse hashes
+      Scenario: Hashes 
+        Given there is a step
+          | with  | content   |
+          | 1     | content 1 |
+          | 2     | content 2 |
+
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [Parse hashes], {}]
+  - [start_scenario, [Hashes], {}]
+  - [start_step, [Given, there is a step], {}]
+  - [start_hash, [with, content], {}]
+  - [hash_data, ['1', content 1], {}]
+  - [hash_data, ['2', content 2], {}]
+  - [finish_hash, [], {}]
+  - [finish_step, [], {}]
+  - [finish_scenario, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
 #.............................................................................
 #   test_parser_callbacks.yaml

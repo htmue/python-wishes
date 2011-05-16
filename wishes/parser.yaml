@@ -32,11 +32,19 @@ states:
   - [scenario, [finish_step, finish_scenario, start_scenario], scenario]
   - [background, [finish_step, finish_scenario, start_background], background]
   - [multiline, [start_multiline], multiline]
+  - [hash, [start_hash], hash]
   - [null, [finish_step, finish_scenario, finish_feature], null]
 
   multiline:
   - [multiline_end, [finish_multiline, finish_step], scenario]
   - [multiline_data, [multiline_data], multiline]
+  
+  hash:
+  - [hash, [hash_line], hash]
+  - [step, [finish_hash, finish_step, start_step], step]
+  - [scenario, [finish_hash, finish_step, finish_scenario, start_scenario], scenario]
+  - [background, [finish_hash, finish_step, finish_scenario, start_background], background]
+  - [null, [finish_hash, finish_step, finish_scenario, finish_feature], null]
 
   background:
   - [step, [start_step], background_step]
@@ -63,6 +71,7 @@ patterns:
   step: '\s*(Given|When|Then|And|But)\s+(.*)'
   multiline: '(\s*""")'
   multiline_data: '(.*)'
+  hash: '\s*\|(.*)'
   whitespace: '(\s*)$'
 
 #.............................................................................
