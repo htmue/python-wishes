@@ -96,5 +96,24 @@ class FeatureTest(unittest.TestCase):
         result.wasSuccessful() |should| be(True)
         world.steps_run |should| be_equal_to([1, 2])
 
+    def test_can_run_feature_with_multiline_step(self):
+        @step('multiline step')
+        def multiline_step(step):
+            world.multiline = step.multiline
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario: with multiline step
+            Given a multiline step
+              """
+              multiline content
+              """
+        ''')
+        world.multiline = None
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(1)
+        result.wasSuccessful() |should| be(True)
+        world.multiline |should| be_equal_to('multiline content\n')
+
 #.............................................................................
 #   test_feature.py

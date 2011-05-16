@@ -30,6 +30,7 @@ class Handler(LogHandler):
     def start_parse(self, name):
         self.feature_name = name
         self.suite = None
+        self.lines = None
     
     def finish_parse(self):
         self.Feature = None
@@ -58,8 +59,25 @@ class Handler(LogHandler):
         self.background = self.scenario
     
     def start_step(self, kind, statement):
-        self.scenario.add_step(kind, statement)
+        self.step = kind, statement
     
+    def finish_step(self):
+        if self.multilines is not None:
+            self.scenario.add_step(*self.step, multilines=self.multilines)
+        else:
+            self.scenario.add_step(kind, statement)
+    
+    def start_multiline(self, indent):
+        self.lines = []
+    
+    def finish_multiline(self):
+        self.multilines = self.lines
+        self.lines = None
+    
+    def data(self, data):
+        if self.lines is not None:
+            self.lines.append(data)
+
     def make_feature_name(self, title):
         return 'Feature_' + slugify(title)
     

@@ -82,5 +82,11 @@ class ScenarioTest(unittest.TestCase):
         scenario.run(feature)
         world.steps_run |should| each_be_equal_to(range(3))
 
+    def test_can_add_multiline_step(object):
+        scenario = Scenario('Test scenario')
+        scenario.add_step('Given', 'multiline', multilines=['line\n'])
+        scenario.step_count |should| be(1)
+        scenario.steps[0].multilines |should| be_equal_to(['line\n'])
+
 #.............................................................................
 #   test_scenario.py
