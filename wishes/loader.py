@@ -41,6 +41,8 @@ class Handler(LogHandler):
         Feature.__name__ = self.make_feature_name(title)
         self.Feature = Feature
         self.background = None
+        self.multilines = None
+        self.hashes = None
     
     def finish_feature(self):
         self.suite = unittest.defaultTestLoader.loadTestsFromTestCase(self.Feature)
@@ -64,8 +66,12 @@ class Handler(LogHandler):
     def finish_step(self):
         if self.multilines is not None:
             self.scenario.add_step(*self.step, multilines=self.multilines)
+            self.multilines = None
+        elif self.hashes is not None:
+            self.scenario.add_step(*self.step, hashes=self.hashes)
+            self.hashes = None
         else:
-            self.scenario.add_step(kind, statement)
+            self.scenario.add_step(*self.step)
     
     def start_multiline(self, indent):
         self.lines = []
@@ -73,6 +79,16 @@ class Handler(LogHandler):
     def finish_multiline(self):
         self.multilines = self.lines
         self.lines = None
+    
+    def start_hash(self, *keys):
+        self.hash_keys = keys
+        self.hashes = []
+    
+    def hash_data(self, *values):
+        self.hashes.append(dict(zip(self.hash_keys, values)))
+    
+    def finish_hash(self):
+        self.hash_keys = None
     
     def data(self, data):
         if self.lines is not None:

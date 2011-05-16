@@ -88,5 +88,11 @@ class ScenarioTest(unittest.TestCase):
         scenario.step_count |should| be(1)
         scenario.steps[0].multilines |should| be_equal_to(['line\n'])
 
+    def test_can_add_hashes_step(object):
+        scenario = Scenario('Test scenario')
+        scenario.add_step('Given', 'hashes', hashes=[dict(key='value')])
+        scenario.step_count |should| be(1)
+        scenario.steps[0].hashes |should| be_equal_to([dict(key='value')])
+
 #.............................................................................
 #   test_scenario.py
