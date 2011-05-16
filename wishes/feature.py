@@ -23,9 +23,9 @@ class FeatureTest(object):
         return self.scenarios[self._testMethodName]
     
     @classmethod
-    def add_scenario(self, methodName, scenario):
-        setattr(self, methodName, self.runTest)
-        self.scenarios[methodName] = scenario
+    def add_scenario(cls, methodName, scenario):
+        setattr(cls, methodName, cls.runTest)
+        cls.scenarios[methodName] = scenario
 
 
 class Scenario(object):
