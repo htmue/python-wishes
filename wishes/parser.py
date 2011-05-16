@@ -95,6 +95,12 @@ class Parser(object):
     def finish_scenario(self):
         self.handler.finish_scenario()
 
+    def start_background(self):
+        self.handler.start_background(*self.stripped_groups())
+
+    def finish_background(self):
+        self.handler.finish_background()
+
     def start_step(self):
         self.handler.start_step(*self.stripped_groups())
 

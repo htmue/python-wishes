@@ -30,13 +30,16 @@ class FeatureTest(object):
 
 class Scenario(object):
     
-    def __init__(self, title):
+    def __init__(self, title, background=None):
         self.title = title
+        self.background = background
         self.steps = []
     
     def run(self, feature):
         if not self.steps:
             feature.skipTest('no steps defined')
+        if self.background is not None:
+            self.background.run(feature)
         for step in self.steps:
             if step.is_undefined:
                 feature.skipTest('pending %d step(s)' % self.step_count_undefined)

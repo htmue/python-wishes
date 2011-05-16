@@ -39,16 +39,23 @@ class Handler(LogHandler):
             pass
         Feature.__name__ = self.make_feature_name(title)
         self.Feature = Feature
+        self.background = None
     
     def finish_feature(self):
         self.suite = unittest.defaultTestLoader.loadTestsFromTestCase(self.Feature)
     
     def start_scenario(self, title):
         self.scenario_method = self.make_scenario_method_name(title)
-        self.scenario = self.Scenario(title)
+        self.scenario = self.Scenario(title, self.background)
     
     def finish_scenario(self):
         self.Feature.add_scenario(self.scenario_method, self.scenario)
+    
+    def start_background(self, title):
+        self.scenario = self.Scenario(title)
+    
+    def finish_background(self):
+        self.background = self.scenario
     
     def start_step(self, kind, statement):
         self.scenario.add_step(kind, statement)

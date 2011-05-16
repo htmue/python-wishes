@@ -262,5 +262,204 @@ parses multiline before new scenario:
   - [finish_feature, [], {}]
   - [finish_parse, [], {}]
 
+
+parses Feature with Background:
+  input: |
+    Feature: with background
+      Background: is here
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_background, [is here], {}]
+  - [finish_background, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with description and Background:
+  input: |
+    Feature: with background
+      And some description
+      Background: is here
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_feature_description, [], {}]
+  - [data, [And some description], {}]
+  - [finish_feature_description, [], {}]
+  - [start_background, [is here], {}]
+  - [finish_background, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with Background and Step:
+  input: |
+    Feature: with background
+      Background: is here
+        And a background step
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_background, [is here], {}]
+  - [start_step, [And, a background step], {}]
+  - [finish_step, [], {}]
+  - [finish_background, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with Background and multiline Step:
+  input: |
+    Feature: with background
+      Background: is here
+        And a background multiline step
+          """
+            With some content
+          """
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_background, [is here], {}]
+  - [start_step, [And, a background multiline step], {}]
+  - [start_multiline, [6], {}]
+  - [data, ["  With some content\n"], {}]
+  - [finish_multiline, [], {}]
+  - [finish_step, [], {}]
+  - [finish_background, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with Background and Scenario and Step:
+  input: |
+    Feature: with background
+      Background: is here
+      Scenario: with step
+        Given a step
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_background, [is here], {}]
+  - [finish_background, [], {}]
+  - [start_scenario, [with step], {}]
+  - [start_step, [Given, a step], {}]
+  - [finish_step, [], {}]
+  - [finish_scenario, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with Background and Scenarios:
+  input: |
+    Feature: with background
+      Background: is here
+      Scenario: first
+      Scenario: second
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_background, [is here], {}]
+  - [finish_background, [], {}]
+  - [start_scenario, [first], {}]
+  - [finish_scenario, [], {}]
+  - [start_scenario, [second], {}]
+  - [finish_scenario, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with multiple Backgrounds:
+  input: |
+    Feature: with background
+      Background: first
+      Background: second
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_background, [first], {}]
+  - [finish_background, [], {}]
+  - [start_background, [second], {}]
+  - [finish_background, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with multiple Backgrounds and Scenarios:
+  input: |
+    Feature: with background
+      Background: first
+      Scenario: first
+      Background: second
+      Scenario: second
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_background, [first], {}]
+  - [finish_background, [], {}]
+  - [start_scenario, [first], {}]
+  - [finish_scenario, [], {}]
+  - [start_background, [second], {}]
+  - [finish_background, [], {}]
+  - [start_scenario, [second], {}]
+  - [finish_scenario, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with Background after Step:
+  input: |
+    Feature: with background
+      Scenario: at start
+        Given a step
+      Background: here
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_scenario, [at start], {}]
+  - [start_step, [Given, a step], {}]
+  - [finish_step, [], {}]
+  - [finish_scenario, [], {}]
+  - [start_background, [here], {}]
+  - [finish_background, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Feature with Background after multiline Step:
+  input: |
+    Feature: with background
+      Scenario: at start
+        Given a multiline step
+          """
+          with content
+          """
+      Background: here
+  
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [with background], {}]
+  - [start_scenario, [at start], {}]
+  - [start_step, [Given, a multiline step], {}]
+  - [start_multiline, [6], {}]
+  - [data, ["with content\n"], {}]
+  - [finish_multiline, [], {}]
+  - [finish_step, [], {}]
+  - [finish_scenario, [], {}]
+  - [start_background, [here], {}]
+  - [finish_background, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
 #.............................................................................
 #   test_parser_callbacks.yaml
