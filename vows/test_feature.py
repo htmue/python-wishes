@@ -164,5 +164,28 @@ class FeatureTest(unittest.TestCase):
             dict(first='first 2', second='second 2', third='third 2'),
         ])
 
+    def test_can_run_feature_with_scenario_outline_and_examples(self):
+        @step('a (.*) with (.*)')
+        def a_key_with_value(step, key, value):
+            world.run.append((key, value))
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario Outline: follows
+            Given a <key> with <value>
+          Examples:
+            | key   | value     |
+            | key 1 | value 1   |
+            | key 2 | value 2   |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            ('key 1', 'value 1'),
+            ('key 2', 'value 2'),
+        ])
+
 #.............................................................................
 #   test_feature.py

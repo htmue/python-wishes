@@ -28,12 +28,34 @@ class FeatureTest(object):
         cls.scenarios[methodName] = scenario
 
 
+def fill_from_example(string, example):
+    for key, value in example.iteritems():
+        string = string.replace(fix_key(key), value)
+    return string
+
+key_brackets = (
+    re.compile(r'<.*>$'),
+    re.compile(r'\[.*\]$'),
+    re.compile(r'\(.*\)$'),
+    re.compile(r'\{.*\}$'),
+)
+def fix_key(key):
+    for bracket_re in key_brackets:
+        if bracket_re.match(key):
+            return key
+    return '<%s>' % key
+
 class Scenario(object):
     
-    def __init__(self, title, background=None):
-        self.title = title
+    def __init__(self, title=None, background=None, outline=None):
         self.background = background
-        self.steps = []
+        if outline is not None:
+            self.outline, self.example = outline
+            self.title = fill_from_example(self.outline.title, self.example)
+            self.create_steps_from_outline()
+        else:
+            self.title = title
+            self.steps = []
     
     def run(self, feature):
         if not self.steps:
@@ -48,6 +70,13 @@ class Scenario(object):
 
     def add_step(self, kind, text, multilines=None, hashes=None):
         self.steps.append(Step(kind, text, multilines=multilines, hashes=hashes))
+
+    def create_steps_from_outline(self):
+        self.steps = list(self.outline.create_steps_from_example(self.example))
+    
+    def create_steps_from_example(self, example):
+        for step in self.steps:
+            yield step.fill_from_example(example)
 
     @property
     def step_count(self):
@@ -93,6 +122,9 @@ class Step(object):
 
     def run(self):
         self.definition(self)
+    
+    def fill_from_example(self, example):
+        return Step(self.kind, fill_from_example(self.text, example))
 
 
 class StepDefinition(object):

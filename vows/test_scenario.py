@@ -82,17 +82,26 @@ class ScenarioTest(unittest.TestCase):
         scenario.run(feature)
         world.steps_run |should| each_be_equal_to(range(3))
 
-    def test_can_add_multiline_step(object):
+    def test_can_add_multiline_step(self):
         scenario = Scenario('Test scenario')
         scenario.add_step('Given', 'multiline', multilines=['line\n'])
         scenario.step_count |should| be(1)
         scenario.steps[0].multilines |should| be_equal_to(['line\n'])
 
-    def test_can_add_hashes_step(object):
+    def test_can_add_hashes_step(self):
         scenario = Scenario('Test scenario')
         scenario.add_step('Given', 'hashes', hashes=[dict(key='value')])
         scenario.step_count |should| be(1)
         scenario.steps[0].hashes |should| be_equal_to([dict(key='value')])
+    
+    def test_can_be_created_from_outline_and_hash(self):
+        outline = Scenario('Test outline')
+        outline.add_step('Given', 'a value <value>')
+        scenario = Scenario('Test scenario', outline=(outline, {'<value>': 'unique'}))
+        scenario.step_count |should| be(1)
+        step = scenario.steps[0]
+        step.kind |should| be_equal_to('Given')
+        step.text |should| be_equal_to('a value unique')
 
 #.............................................................................
 #   test_scenario.py

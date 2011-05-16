@@ -60,6 +60,24 @@ class Handler(LogHandler):
     def finish_background(self):
         self.background = self.scenario
     
+    def start_outline(self, title):
+        self.scenario = self.Scenario(title)
+    
+    def finish_outline(self):
+        self.outline = self.scenario
+    
+    def start_examples(self, title):
+        self.examples = self.make_example_name(title)
+        self.hash_keys = None
+    
+    def finish_examples(self):
+        if self.hashes:
+            for n, example in enumerate(self.hashes):
+                scenario = self.Scenario(outline=(self.outline, example))
+                title = '%s %d %s' % (scenario.title, n + 1, self.examples)
+                scenario_method = self.make_scenario_method_name(title)
+                self.Feature.add_scenario(scenario_method, scenario)
+
     def start_step(self, kind, statement):
         self.step = kind, statement
     
@@ -99,6 +117,9 @@ class Handler(LogHandler):
     
     def make_scenario_method_name(self, title):
         return 'test_Scenario_' + slugify(title)
+    
+    def make_example_name(self, title):
+        return 'Example_' + slugify(title)
 
 def slugify(value):
     value = unicodedata.normalize('NFKD', value.decode('utf-8')).encode('ascii', 'ignore')
