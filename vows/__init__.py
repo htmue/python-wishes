@@ -34,6 +34,9 @@ class EachEqual(object):
 def be_equal_to():
     return (lambda x, y: x == y, '%r is %sequal to %r')
 
+@matcher
+def be_in():
+    return (lambda item, container: item in container, '%r is %sinto %r')
 
 @matcher
 class AssertCalledOnceWith(object):

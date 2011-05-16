@@ -15,17 +15,19 @@ from should_dsl import should
 from wishes.parser import Parser, ParseError
 
 
+callbacks_data = yaml.load(open(os.path.splitext(__file__)[0] + '.yaml'))
+
 class ParserCallbackVowsMeta(type):
-    feature_callbacks_data = yaml.load(open(os.path.splitext(__file__)[0] + '.yaml'))
     
     def __new__(self, classname, bases, classdict):
-        for key, data in self.feature_callbacks_data.iteritems():
-            define_method(classdict, data, 'test_' + key.replace(' ', '_'))
+        for key, data in callbacks_data.iteritems():
+            if 'input' in data and 'callbacks' in data:
+                define_method(classdict, data, 'test_' + key.replace(' ', '_'))
         return type.__new__(self, classname, bases, classdict)
 
 def define_method(classdict, data, test_name):
     def runTest(self):
-        parse_log_check(**data)
+        parse_log_check(data['input'], data['callbacks'])
     runTest.__name__ = test_name
     classdict[test_name] = runTest
 
@@ -74,6 +76,24 @@ class ParserVows(unittest.TestCase):
         '''.strip())
         parse |should| throw(ParseError)
 
+    def test_tested_parsing_events_are_complete(self):
+        events, states, matchers = Parser.parser_info()
+        tested_events = set()
+        for test in callbacks_data.values():
+            for state, matcher in test['tested_events']:
+                state |should| be_in(states)
+                matcher |should| be_in(matchers)
+                tested_events.add((state, matcher))
+        untested_events = events - tested_events
+        sorted(untested_events) |should| each_be_equal_to([])
+
+    def test_containes_unreachable_transitions(self):
+        reachable_transitions, possible_transitions = Parser.parser_transitions()
+        unreachable_transitions = possible_transitions - reachable_transitions
+        unreachable_transitions = sorted(list(t) for t in unreachable_transitions)
+        checked_unreachable_transitions = yaml.load(
+            open(os.path.join(os.path.dirname(__file__), 'checked_unreachable_transitions.yaml')))
+        unreachable_transitions |should| each_be_equal_to(checked_unreachable_transitions)
 
 #.............................................................................
 #   test_parser.py

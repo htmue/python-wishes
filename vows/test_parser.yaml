@@ -5,6 +5,10 @@
 #=============================================================================
 
 recognizes Feature keyword:
+  tested_events:
+  - [start, feature]
+  - [feature, null]
+
   input: 'Feature: Parse feature file'
   callbacks:
   - [start_parse, [<string>], {}]
@@ -14,6 +18,11 @@ recognizes Feature keyword:
 
 
 parses Feature and description:
+  tested_events:
+  - [feature, feature_description]
+  - [feature_description, feature_description]
+  - [feature_description, null]
+
   input: |
     Feature: Parse feature file
       As a developer
@@ -33,6 +42,10 @@ parses Feature and description:
 
 
 parses Feature and Scenario keyword:
+  tested_events:
+  - [feature, scenario]
+  - [scenario, null]
+  
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -47,6 +60,9 @@ parses Feature and Scenario keyword:
 
 
 parses Feature with description and Scenario:
+  tested_events:
+  - [feature_description, scenario]
+  
   input: |
     Feature: Parse feature file
       As a developer
@@ -70,7 +86,31 @@ parses Feature with description and Scenario:
   - [finish_parse, [], {}]
 
 
+parses Scenario after pending Scenario:
+  tested_events:
+  - [scenario, scenario]
+
+  input: |
+    Feature: Parse feature file
+      Scenario: pending
+      Scenario: afterwards
+
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [Parse feature file], {}]
+  - [start_scenario, [pending], {}]
+  - [finish_scenario, [], {}]
+  - [start_scenario, [afterwards], {}]
+  - [finish_scenario, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
 parses Feature Scenario and Given keyword:
+  tested_events:
+  - [scenario, step]
+  - [step, null]
+  
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -88,6 +128,9 @@ parses Feature Scenario and Given keyword:
 
 
 parses Feature Scenario and When keyword:
+  tested_events:
+  - [scenario, step]
+
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -105,6 +148,9 @@ parses Feature Scenario and When keyword:
 
 
 parses Feature Scenario and Then keyword:
+  tested_events:
+  - [scenario, step]
+
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -122,6 +168,9 @@ parses Feature Scenario and Then keyword:
 
 
 parses Feature Scenario and And keyword:
+  tested_events:
+  - [scenario, step]
+
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -139,6 +188,9 @@ parses Feature Scenario and And keyword:
 
 
 parses Feature Scenario and But keyword:
+  tested_events:
+  - [scenario, step]
+
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -156,6 +208,9 @@ parses Feature Scenario and But keyword:
 
 
 parses Feature Scenario and Steps:
+  tested_events:
+  - [step, step]
+
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -185,6 +240,11 @@ parses Feature Scenario and Steps:
 
 
 parses multiline:
+  tested_events:
+  - [step, multiline]
+  - [multiline, multiline_data]
+  - [multiline, multiline_end]
+  
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -212,6 +272,9 @@ parses multiline:
 
 
 parses multiline between steps:
+  tested_events:
+  - [step, step]
+  
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -238,6 +301,9 @@ parses multiline between steps:
 
 
 parses multiline before new scenario:
+  tested_events:
+  - [step, scenario]
+
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -264,6 +330,8 @@ parses multiline before new scenario:
 
 
 parses multiline with indented multiline marker:
+  tested_events: []
+  
   input: |
     Feature: Parse feature file
       Scenario: Test what is going on
@@ -286,6 +354,10 @@ parses multiline with indented multiline marker:
   
 
 parses Feature with Background:
+  tested_events:
+  - [feature, background]
+  - [background, null]
+  
   input: |
     Feature: with background
       Background: is here
@@ -300,6 +372,9 @@ parses Feature with Background:
 
 
 parses Feature with description and Background:
+  tested_events:
+  - [feature_description, background]
+  
   input: |
     Feature: with background
       And some description
@@ -318,6 +393,10 @@ parses Feature with description and Background:
 
 
 parses Feature with Background and Step:
+  tested_events:
+  - [background, step]
+  - [background_step, null]
+  
   input: |
     Feature: with background
       Background: is here
@@ -335,6 +414,11 @@ parses Feature with Background and Step:
 
 
 parses Feature with Background and multiline Step:
+  tested_events:
+  - [background_step, multiline]
+  - [background_multiline, multiline_data]
+  - [background_multiline, multiline_end]
+
   input: |
     Feature: with background
       Background: is here
@@ -358,6 +442,9 @@ parses Feature with Background and multiline Step:
 
 
 parses Feature with Background and Scenario and Step:
+  tested_events:
+  - [background, scenario]
+    
   input: |
     Feature: with background
       Background: is here
@@ -378,6 +465,8 @@ parses Feature with Background and Scenario and Step:
 
 
 parses Feature with Background and Scenarios:
+  tested_events: []
+
   input: |
     Feature: with background
       Background: is here
@@ -398,6 +487,9 @@ parses Feature with Background and Scenarios:
 
 
 parses Feature with multiple Backgrounds:
+  tested_events:
+  - [background, background]
+  
   input: |
     Feature: with background
       Background: first
@@ -415,6 +507,9 @@ parses Feature with multiple Backgrounds:
 
 
 parses Feature with multiple Backgrounds and Scenarios:
+  tested_events:
+  - [scenario, background]
+
   input: |
     Feature: with background
       Background: first
@@ -438,6 +533,9 @@ parses Feature with multiple Backgrounds and Scenarios:
 
 
 parses Feature with Background after Step:
+  tested_events:
+  - [step, background]
+
   input: |
     Feature: with background
       Scenario: at start
@@ -458,6 +556,9 @@ parses Feature with Background after Step:
 
 
 parses Feature with Background after multiline Step:
+  tested_events:
+  - [step, background]
+
   input: |
     Feature: with background
       Scenario: at start
@@ -484,6 +585,10 @@ parses Feature with Background after multiline Step:
 
 
 parses hashes:
+  tested_events:
+  - [step, hash]
+  - [hash, null]
+
   input: |
     Feature: Parse hashes
       Scenario: Hashes 
@@ -504,6 +609,9 @@ parses hashes:
 
 
 parses hashes with content:
+  tested_events:
+  - [hash, hash]
+
   input: |
     Feature: Parse hashes
       Scenario: Hashes 
@@ -528,6 +636,11 @@ parses hashes with content:
 
 
 parses Scenario Outlines:
+  tested_events:
+  - [feature, outline]
+  - [outline, step]
+  - [outline_step, null]
+
   input: |
     Feature: Parse outlines
       Scenario Outline: follows
@@ -545,6 +658,12 @@ parses Scenario Outlines:
 
 
 parses Scenario Outlines with Examples:
+  tested_events:
+  - [outline_step, examples]
+  - [examples, hash]
+  - [examples_hash, hash]
+  - [examples_hash, null]
+
   input: |
     Feature: Parse outlines
       Scenario Outline: follows
@@ -568,6 +687,41 @@ parses Scenario Outlines with Examples:
   - [finish_feature, [], {}]
   - [finish_parse, [], {}]
 
+
+contains untested events:
+  tested_events:
+  - [background, outline]
+  - [background_hash, null]
+  - [background_hash, hash]
+  - [background_hash, outline]
+  - [background_hash, scenario]
+  - [background_hash, step]
+  - [background_step, hash]
+  - [background_step, outline]
+  - [background_step, scenario]
+  - [background_step, step]
+  - [examples, null]
+  - [examples_hash, examples]
+  - [feature_description, outline]
+  - [hash, background]
+  - [hash, outline]
+  - [hash, scenario]
+  - [hash, step]
+  - [outline, null]
+  - [outline, examples]
+  - [outline_hash, null]
+  - [outline_hash, examples]
+  - [outline_hash, hash]
+  - [outline_hash, step]
+  - [outline_multiline, multiline_data]
+  - [outline_multiline, multiline_end]
+  - [outline_step, hash]
+  - [outline_step, multiline]
+  - [outline_step, step]
+  - [scenario, outline]
+  - [start, null]
+  - [step, outline]
+  
 
 #.............................................................................
 #   test_parser_callbacks.yaml
