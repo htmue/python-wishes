@@ -502,6 +502,7 @@ parses hashes:
   - [finish_feature, [], {}]
   - [finish_parse, [], {}]
 
+
 parses hashes with content:
   input: |
     Feature: Parse hashes
@@ -524,6 +525,49 @@ parses hashes with content:
   - [finish_scenario, [], {}]
   - [finish_feature, [], {}]
   - [finish_parse, [], {}]
+
+
+parses Scenario Outlines:
+  input: |
+    Feature: Parse outlines
+      Scenario Outline: follows
+        Given there <is> a <step>
+
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [Parse outlines], {}]
+  - [start_outline, [follows], {}]
+  - [start_step, [Given, there <is> a <step>], {}]
+  - [finish_step, [], {}]
+  - [finish_outline, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
+
+parses Scenario Outlines with Examples:
+  input: |
+    Feature: Parse outlines
+      Scenario Outline: follows
+        Given there <is> a <step>
+      Examples: here
+        | is  | step  |
+        | one | two   |
+
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [Parse outlines], {}]
+  - [start_outline, [follows], {}]
+  - [start_step, [Given, there <is> a <step>], {}]
+  - [finish_step, [], {}]
+  - [finish_outline, [], {}]
+  - [start_examples, [here], {}]
+  - [start_hash, [is, step], {}]
+  - [hash_data, [one, two], {}]
+  - [finish_hash, [], {}]
+  - [finish_examples, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+
 
 #.............................................................................
 #   test_parser_callbacks.yaml

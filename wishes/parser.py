@@ -108,6 +108,18 @@ class Parser(object):
     def finish_background(self):
         self.handler.finish_background()
     
+    def start_outline(self):
+        self.handler.start_outline(*self.stripped_groups())
+    
+    def finish_outline(self):
+        self.handler.finish_outline()
+    
+    def start_examples(self):
+        self.handler.start_examples(*self.stripped_groups())
+    
+    def finish_examples(self):
+        self.handler.finish_examples()
+    
     def start_step(self):
         self.handler.start_step(*self.stripped_groups())
     
