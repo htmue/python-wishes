@@ -144,7 +144,10 @@ class Parser(object):
         return len(multiline_start) - len(multiline_start.lstrip())
     
     def multiline_data(self):
-        self.handler.data(self.match.string[self.multiline_indent:])
+        line = self.match.string
+        if line[:self.multiline_indent].strip():
+            raise ParseError('invalid dedent in multiline: %r', line)
+        self.handler.data(line[self.multiline_indent:])
     
     def stripped_groups(self):
         return tuple(arg.strip() for arg in self.match.groups())
