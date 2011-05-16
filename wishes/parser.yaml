@@ -56,11 +56,18 @@ states:
   - [step, [finish_step, start_step], background_step]
   - [scenario, [finish_step, finish_background, start_scenario], scenario]
   - [multiline, [start_multiline], background_multiline]
+  - [hash, [start_hash], background_hash]
   - [null, [finish_step, finish_background, finish_feature], null]
 
   background_multiline:
   - [multiline_end, [finish_multiline, finish_step], background]
   - [multiline_data, [multiline_data], background_multiline]
+
+  background_hash:
+  - [hash, [hash_line], background_hash]
+  - [step, [finish_hash, finish_step, start_step], background_step]
+  - [scenario, [finish_hash, finish_step, finish_background, start_scenario], scenario]
+  - [null, [finish_hash, finish_step, finish_background, finish_feature], null]
 
 
 patterns:
