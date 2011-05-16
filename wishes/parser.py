@@ -23,17 +23,24 @@ class Parser(object):
         self.states = dict(self._compile_states(self.config['states']))
         self.multiline_indent = None
         self.current_state = None
-
+    
     def _compile_states(self, states):
         for key, rows in states.iteritems():
             yield key, tuple(self._compile_transitions(rows))
     
     def _compile_transitions(self, rows):
         for pattern, transitions, next_state in rows:
-            if pattern is not None:
-                pattern = self.patterns[pattern]
+            if pattern is None:
+                matcher = None
+            else:
+                try:
+                    pattern = self.patterns[pattern]
+                except KeyError:
+                    matcher = getattr(self, pattern)
+                else:
+                    matcher = pattern.match
             transitions = tuple(getattr(self, method) for method in transitions)
-            yield pattern, transitions, next_state
+            yield matcher, transitions, next_state
     
     def _compile_patterns(self, patterns):
         for key, value in patterns.iteritems():
@@ -46,17 +53,17 @@ class Parser(object):
             self.handle_line(line)
         self.handle_line(None)
         self.finish_parse()
-
+    
     def is_whitespace(self, line):
         return line is not None and self.whitespace_pattern.match(line)
     
     def handle_line(self, line):
         new_states = self.states[self.current_state]
-        for pattern, transitions, next_state in new_states:
-            if pattern is None or line is None:
-                match = pattern is line
+        for matcher, transitions, next_state in new_states:
+            if matcher is None or line is None:
+                match = matcher is line
             else:
-                match = pattern.match(line)
+                match = matcher(line)
             if match:
                 self.match = match
                 for transition in transitions:
@@ -79,37 +86,37 @@ class Parser(object):
         except AttributeError:
             name = '<string>'
         self.handler.start_parse(name)
-
+    
     def finish_parse(self):
         self.handler.finish_parse()
     
     def start_feature(self):
         self.handler.start_feature(*self.stripped_groups())
-
+    
     def finish_feature(self):
         self.handler.finish_feature()
-
+    
     def start_scenario(self):
         self.handler.start_scenario(*self.stripped_groups())
-
+    
     def finish_scenario(self):
         self.handler.finish_scenario()
-
+    
     def start_background(self):
         self.handler.start_background(*self.stripped_groups())
-
+    
     def finish_background(self):
         self.handler.finish_background()
-
+    
     def start_step(self):
         self.handler.start_step(*self.stripped_groups())
-
+    
     def finish_step(self):
         self.handler.finish_step()
-
+    
     def start_feature_description(self):
         self.handler.start_feature_description()
-
+    
     def finish_feature_description(self):
         self.handler.finish_feature_description()
     
@@ -120,18 +127,28 @@ class Parser(object):
         self.handler.whitespace(self.match.string)
     
     def start_multiline(self):
-        multiline_start = self.match.group(1)
-        self._multiline_indent = len(multiline_start) - len(multiline_start.lstrip())
-        self.handler.start_multiline(self._multiline_indent)
+        self.multiline_indent = self.get_multiline_indent(self.match)
+        self.handler.start_multiline(self.multiline_indent)
     
     def finish_multiline(self):
-        self._multiline_indent = None
+        self.multiline_indent = None
         self.handler.finish_multiline()
     
+    def multiline_end(self, line):
+        match = self.patterns['multiline'].match(line)
+        if match and self.get_multiline_indent(match) == self.multiline_indent:
+            return match
+    
+    def get_multiline_indent(self, match):
+        multiline_start = match.group(1)
+        return len(multiline_start) - len(multiline_start.lstrip())
+    
     def multiline_data(self):
-        self.handler.data(self.match.string[self._multiline_indent:])
-        
-
+        line = self.match.string
+        if line[:self.multiline_indent].strip():
+            raise ParseError('invalid dedent in multiline: %r', line)
+        self.handler.data(line[self.multiline_indent:])
+    
     def stripped_groups(self):
         return tuple(arg.strip() for arg in self.match.groups())
 

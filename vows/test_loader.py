@@ -118,5 +118,23 @@ class LoaderTest(unittest.TestCase):
         ''', scenario_class=MyScenario)
         len(calls) |should| be(1)
 
+    def test_passes_on_multiline_content_to_scenario_add_step_method(self):
+        calls = []
+        class MyScenario(Scenario):
+            def add_step(self, *args, **kwargs):
+                calls.append((args, kwargs))
+        feature = loader.load_feature('''
+        Feature: Load feature file
+          Scenario: with step
+            Given a multiline step
+              """
+              multiline content
+              """
+        ''', scenario_class=MyScenario)
+        len(calls) |should| be(1)
+        calls[0] |should| each_be_equal_to((
+            ('Given', 'a multiline step'), dict(multilines=['multiline content\n'])
+        ))
+
 #.............................................................................
 #   test_loader.py

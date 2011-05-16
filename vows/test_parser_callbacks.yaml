@@ -263,6 +263,28 @@ parses multiline before new scenario:
   - [finish_parse, [], {}]
 
 
+parses multiline with indented multiline marker:
+  input: |
+    Feature: Parse feature file
+      Scenario: Test what is going on
+        Given a multiline
+          """
+            """
+          """
+  callbacks:
+  - [start_parse, [<string>], {}]
+  - [start_feature, [Parse feature file], {}]
+  - [start_scenario, [Test what is going on], {}]
+  - [start_step, [Given, a multiline], {}]
+  - [start_multiline, [6], {}]
+  - [data, ["  \"\"\"\n"], {}]
+  - [finish_multiline, [], {}]
+  - [finish_step, [], {}]
+  - [finish_scenario, [], {}]
+  - [finish_feature, [], {}]
+  - [finish_parse, [], {}]
+  
+
 parses Feature with Background:
   input: |
     Feature: with background

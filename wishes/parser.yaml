@@ -35,7 +35,7 @@ states:
   - [null, [finish_step, finish_scenario, finish_feature], null]
 
   multiline:
-  - [multiline, [finish_multiline, finish_step], scenario]
+  - [multiline_end, [finish_multiline, finish_step], scenario]
   - [multiline_data, [multiline_data], multiline]
 
   background:
@@ -51,7 +51,7 @@ states:
   - [null, [finish_step, finish_background, finish_feature], null]
 
   background_multiline:
-  - [multiline, [finish_multiline, finish_step], background]
+  - [multiline_end, [finish_multiline, finish_step], background]
   - [multiline_data, [multiline_data], background_multiline]
 
 

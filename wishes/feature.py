@@ -46,8 +46,8 @@ class Scenario(object):
                 return
             step.run()
 
-    def add_step(self, kind, text):
-        self.steps.append(Step(kind, text))
+    def add_step(self, kind, text, multilines=None):
+        self.steps.append(Step(kind, text, multilines=multilines))
 
     @property
     def step_count(self):
@@ -72,10 +72,11 @@ class Scenario(object):
 
 class Step(object):
     
-    def __init__(self, kind, text):
+    def __init__(self, kind, text, multilines=None):
         self.kind = kind
         self.text = text
         self.definition, self.match = StepDefinition.get_step_definition(kind, text)
+        self.multilines = multilines or []
     
     @property
     def is_defined(self):
@@ -84,6 +85,10 @@ class Step(object):
     @property
     def is_undefined(self):
         return self.definition is None
+
+    @property
+    def multiline(self):
+        return ''.join(self.multilines)
 
     def run(self):
         self.definition(self)
