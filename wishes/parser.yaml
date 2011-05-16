@@ -40,7 +40,7 @@ states:
   - [null, [finish_step, finish_scenario, finish_feature], null]
 
   multiline:
-  - [multiline_end, [finish_multiline, finish_step], scenario]
+  - [multiline_end, [finish_multiline], step]
   - [multiline_data, [multiline_data], multiline]
   
   hash:
@@ -67,7 +67,7 @@ states:
   - [null, [finish_step, finish_background, finish_feature], null]
 
   background_multiline:
-  - [multiline_end, [finish_multiline, finish_step], background]
+  - [multiline_end, [finish_multiline], background_step]
   - [multiline_data, [multiline_data], background_multiline]
 
   background_hash:
@@ -90,7 +90,7 @@ states:
   - [null, [finish_step, finish_outline, finish_feature], null]
 
   outline_multiline:
-  - [multiline_end, [finish_multiline, finish_step], outline]
+  - [multiline_end, [finish_multiline], outline_step]
   - [multiline_data, [multiline_data], outline_multiline]
 
   outline_hash:
