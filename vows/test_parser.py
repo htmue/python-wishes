@@ -50,18 +50,6 @@ class ParserVows(unittest.TestCase):
         parser = Parser()
         parser.parse('')
     
-    def test_reports_start_and_end(self):
-        handler = mock.Mock()
-        features = StringIO()
-        parser = Parser(handler)
-        
-        parser.parse(features)
-        
-        handler.method_calls |should| each_be_equal_to([
-            ('start_parse', ('<string>',), {}),
-            ('finish_parse', (), {}),
-        ])
-    
     def test_raises_parse_error_on_invalid_multiline_dedent(self):
         handler = mock.Mock()
         parser = Parser(handler)

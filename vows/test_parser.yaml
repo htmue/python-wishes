@@ -6,6 +6,15 @@
 
 callbacks:
 
+  reports start and end:
+    tested_events:
+    - [start, null]
+
+    input: ''
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [finish_parse, [], {}]
+
   recognizes Feature keyword:
     tested_events:
     - [start, feature]
@@ -721,7 +730,6 @@ callbacks:
     - [outline_step, multiline]
     - [outline_step, step]
     - [scenario, outline]
-    - [start, null]
     - [step, outline]
   
 
