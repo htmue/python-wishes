@@ -89,7 +89,7 @@ class LoaderTest(unittest.TestCase):
         ''')
         test_case = iter(feature).next()
         test_case.scenario.title |should| be_equal_to('Has a nice Title')
-
+    
     def test_can_use_custom_scenario_class(self):
         class MyScenario(Scenario):
             pass
@@ -99,7 +99,7 @@ class LoaderTest(unittest.TestCase):
         ''', scenario_class=MyScenario)
         test_case = iter(feature).next()
         test_case.scenario |should| be_instance_of(MyScenario)
-
+    
     def test_rejects_custom_scenario_class_that_is_not_Scenario_subclass(self):
         class MyScenario(object):
             pass
@@ -117,7 +117,7 @@ class LoaderTest(unittest.TestCase):
             When step is defined
         ''', scenario_class=MyScenario)
         len(calls) |should| be(1)
-
+    
     def test_passes_on_multiline_content_to_scenario_add_step_method(self):
         calls = []
         class MyScenario(Scenario):
@@ -135,7 +135,7 @@ class LoaderTest(unittest.TestCase):
         calls[0] |should| each_be_equal_to((
             ('Given', 'a multiline step'), dict(multilines=['multiline content\n'])
         ))
-
+    
     def test_passes_on_hashes_to_scenario_add_step_method(self):
         calls = []
         class MyScenario(Scenario):
@@ -150,12 +150,13 @@ class LoaderTest(unittest.TestCase):
               | first 2 | second 2  | third 2   |
         ''', scenario_class=MyScenario)
         len(calls) |should| be(1)
-        calls[0] |should| each_be_equal_to((
-            ('Given', 'a step with hashes'), dict(hashes=[
-                dict(first='first 1', second='second 1', third='third 1'),
-                dict(first='first 2', second='second 2', third='third 2'),
-            ])
-        ))
+        args, kwargs = calls[0]
+        args |should| be_equal_to(('Given', 'a step with hashes'))
+        'hashes' |should| be_in(kwargs)
+        list(kwargs['hashes']) |should| each_be_equal_to([
+            dict(first='first 1', second='second 1', third='third 1'),
+            dict(first='first 2', second='second 2', third='third 2'),
+        ])
 
 #.............................................................................
 #   test_loader.py
