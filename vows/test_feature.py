@@ -187,5 +187,31 @@ class FeatureTest(unittest.TestCase):
             ('key 2', 'value 2'),
         ])
 
+    def test_can_run_feature_with_scenario_outline_with_multiline(self):
+        @step('a multiline')
+        def a_key_with_value(step):
+            world.run.append(step.multiline)
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario Outline: follows
+            Given a multiline
+              """
+              with <placeholder>
+              """
+          Examples:
+            | <placeholder> |
+            | first         |
+            | second        |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            'with first\n',
+            'with second\n',
+        ])
+
 #.............................................................................
 #   test_feature.py

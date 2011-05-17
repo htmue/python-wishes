@@ -124,7 +124,8 @@ class Step(object):
         self.definition(self)
     
     def fill_from_example(self, example):
-        return Step(self.kind, fill_from_example(self.text, example))
+        multilines = [fill_from_example(line, example) for line in self.multilines]
+        return Step(self.kind, fill_from_example(self.text, example), multilines=multilines)
 
 
 class StepDefinition(object):

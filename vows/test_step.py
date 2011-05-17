@@ -47,5 +47,17 @@ class StepTest(unittest.TestCase):
         step_.run()
         world.capture |should| be_equal_to('captured')
 
+    def test_can_fill_itself_from_example(self):
+        outline_step = Step('Given', 'an <outlined> step')
+        filled_step = outline_step.fill_from_example({'<outlined>': 'filled'})
+        filled_step.text |should| be_equal_to('an filled step')
+    
+    def test_can_fill_its_multiline_from_example(self):
+        outline_step = Step('Given', 'a step', multilines=['with <placeholder>\n'])
+        filled_step = outline_step.fill_from_example({'<placeholder>': 'replacement'})
+        filled_step.multiline |should| be_equal_to('with replacement\n')
+    
+    
+
 #.............................................................................
 #   test_step.py
