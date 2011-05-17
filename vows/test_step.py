@@ -57,6 +57,15 @@ class StepTest(unittest.TestCase):
         filled_step = outline_step.fill_from_example({'<placeholder>': 'replacement'})
         filled_step.multiline |should| be_equal_to('with replacement\n')
     
+    def test_can_fill_its_hashes_from_example(self):
+        outline_step = Step('Given', 'a step', hashes=[
+            {'value': '<a>'}, {'<b>': 'key'},
+        ])
+        filled_step = outline_step.fill_from_example({'<a>': 'a value', '<b>': 'b key'})
+        filled_step.hashes |should| each_be_equal_to([
+            {'value': 'a value'}, {'b key': 'key'},
+        ])
+    
     
 
 #.............................................................................

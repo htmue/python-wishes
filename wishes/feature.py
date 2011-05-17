@@ -125,7 +125,12 @@ class Step(object):
     
     def fill_from_example(self, example):
         multilines = [fill_from_example(line, example) for line in self.multilines]
-        return Step(self.kind, fill_from_example(self.text, example), multilines=multilines)
+        hashes = [dict(
+            (fill_from_example(key, example), fill_from_example(value, example))
+            for key, value in hash.items()
+        ) for hash in self.hashes]
+        return Step(self.kind, fill_from_example(self.text, example),
+            multilines=multilines, hashes=hashes)
 
 
 class StepDefinition(object):

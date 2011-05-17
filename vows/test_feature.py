@@ -189,7 +189,7 @@ class FeatureTest(unittest.TestCase):
 
     def test_can_run_feature_with_scenario_outline_with_multiline(self):
         @step('a multiline')
-        def a_key_with_value(step):
+        def a_multiline(step):
             world.run.append(step.multiline)
         feature = load_feature('''
         Feature: with multiline scenarnio
@@ -212,6 +212,32 @@ class FeatureTest(unittest.TestCase):
             'with first\n',
             'with second\n',
         ])
+
+    def test_can_run_feature_with_scenario_outline_with_hashes(self):
+        @step('a hash')
+        def a_hash(step):
+            world.run.append(step.hashes)
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario Outline: follows
+            Given a hash
+              | <key>   | value         |
+              | the     | <placeholder> |
+          Examples:
+            | <key>   | <placeholder> |
+            | key       | first         |
+            | but       | second        |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            [dict(key='the', value='first')],
+            [dict(but='the', value='second')],
+        ])
+
 
 #.............................................................................
 #   test_feature.py
