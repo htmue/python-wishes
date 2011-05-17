@@ -15,19 +15,19 @@ from should_dsl import should
 from wishes.parser import Parser, ParseError
 
 
-callbacks_data = yaml.load(open(os.path.splitext(__file__)[0] + '.yaml'))
+test_data = yaml.load(open(os.path.splitext(__file__)[0] + '.yaml'))
 
 class ParserCallbackVowsMeta(type):
     
     def __new__(self, classname, bases, classdict):
-        for key, data in callbacks_data.iteritems():
-            if 'input' in data and 'callbacks' in data:
-                define_method(classdict, data, 'test_' + key.replace(' ', '_'))
+        for key, test in test_data['callbacks'].iteritems():
+            if 'input' in test and 'callbacks' in test:
+                define_method(classdict, test, 'test_' + key.replace(' ', '_'))
         return type.__new__(self, classname, bases, classdict)
 
-def define_method(classdict, data, test_name):
+def define_method(classdict, test, test_name):
     def runTest(self):
-        parse_log_check(data['input'], data['callbacks'])
+        parse_log_check(test['input'], test['callbacks'])
     runTest.__name__ = test_name
     classdict[test_name] = runTest
 
@@ -79,7 +79,7 @@ class ParserVows(unittest.TestCase):
     def test_tested_parsing_events_are_complete(self):
         events, states, matchers = Parser.parser_info()
         tested_events = set()
-        for test in callbacks_data.values():
+        for test in test_data['callbacks'].values():
             for state, matcher in test['tested_events']:
                 state |should| be_in(states)
                 matcher |should| be_in(matchers)
@@ -91,9 +91,7 @@ class ParserVows(unittest.TestCase):
         reachable_transitions, possible_transitions = Parser.parser_transitions()
         unreachable_transitions = possible_transitions - reachable_transitions
         unreachable_transitions = sorted(list(t) for t in unreachable_transitions)
-        checked_unreachable_transitions = yaml.load(
-            open(os.path.join(os.path.dirname(__file__), 'checked_unreachable_transitions.yaml')))
-        unreachable_transitions |should| each_be_equal_to(checked_unreachable_transitions)
+        unreachable_transitions |should| each_be_equal_to(test_data['unreachable transitions'])
 
 #.............................................................................
 #   test_parser.py
