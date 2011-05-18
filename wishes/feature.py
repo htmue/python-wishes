@@ -164,6 +164,9 @@ class Step(object):
             multilines=multilines, hashes=self.hashes.fill_from_example(example))
 
 
+class StepDefinitionError(Exception):
+    pass
+
 class StepDefinition(object):
     step_definitions = []
     
@@ -172,18 +175,34 @@ class StepDefinition(object):
         self.definition = definition
         self.add_step_definition(self)
     
+    def __repr__(self):
+        return repr(self.pattern.pattern)
+    
     @classmethod
     def add_step_definition(self, step_definition):
         self.step_definitions.append(step_definition)
     
     @classmethod
-    def get_step_definition(self, kind, text):
+    def get_step_definitions(self, kind, text):
         s = ' '.join((kind, text))
         for step_definition in self.step_definitions:
             match = step_definition.match(s)
             if match:
-                return step_definition, match
-        return None, None
+                yield step_definition, match
+    
+    @classmethod
+    def get_step_definition(self, kind, text):
+        step_definitions = list(self.get_step_definitions(kind, text))
+        if len(step_definitions) == 1:
+            return step_definitions[0]
+        elif len(step_definitions) > 1:
+            raise StepDefinitionError(
+                'more than one match for %r %r: %s',
+                kind, text,
+                [step_definition for step_definition, match in step_definitions]
+            )
+        else:
+            return None, None
     
     @classmethod
     def clear(self):

@@ -4,11 +4,11 @@
 #   test_scenario.py --- Wishes scenario vows
 #=============================================================================
 import unittest
-
+from functools import partial
 import mock
 from should_dsl import should
 
-from wishes.feature import Scenario, step, StepDefinition, world
+from wishes.feature import Scenario, step, StepDefinition, world, StepDefinitionError
 
 
 class ScenarioTest(unittest.TestCase):
@@ -117,6 +117,18 @@ class ScenarioTest(unittest.TestCase):
         step = scenario.steps[0]
         step.kind |should| be_equal_to('Given')
         step.text |should| be_equal_to('another value')
+
+    def test_raises_exception_when_multiple_step_definitions_match(self):
+        @step('is step ([0-9]+)')
+        def is_step_number(step, number):
+            pass
+        @step('is step (.+)')
+        def is_step_any(step, any):
+            pass
+        scenario = Scenario('Test scenario')
+        add_step = partial(scenario.add_step, 'Given', 'there is step 1')
+        add_step |should| throw(StepDefinitionError)
+
 
 #.............................................................................
 #   test_scenario.py
