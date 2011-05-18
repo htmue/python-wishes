@@ -3,15 +3,17 @@
 #=============================================================================
 #   __init__.py --- 
 #=============================================================================
-import logging.config
-import os.path
+try:
+    from logging.config import dictConfig
+except ImportError:
+    pass
+else:
+    import os.path
+    import yaml
 
-import yaml
-
-
-logging_yaml = os.path.join(os.path.dirname(__file__), 'logging.yaml')
-if os.path.isfile(logging_yaml):
-    logging.config.dictConfig(yaml.load(open(logging_yaml)))
+    logging_yaml = os.path.join(os.path.dirname(__file__), 'logging.yaml')
+    if os.path.isfile(logging_yaml):
+        dictConfig(yaml.load(open(logging_yaml)))
 
 #.............................................................................
 #   __init__.py

@@ -5,8 +5,8 @@
 #=============================================================================
 import re
 import unicodedata
-import unittest
 
+from compat import unittest
 from feature import FeatureTest, Scenario, Hashes
 from parser import Parser
 

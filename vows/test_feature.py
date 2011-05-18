@@ -3,10 +3,9 @@
 #=============================================================================
 #   test_feature.py --- Wishes feature vows
 #=============================================================================
-import unittest
-
 from should_dsl import should
 
+from wishes.compat import unittest
 from wishes.feature import world, StepDefinition, step
 from wishes.loader import load_feature
 

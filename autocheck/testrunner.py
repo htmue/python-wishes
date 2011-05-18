@@ -6,8 +6,12 @@
 import os
 import sys
 import time
-from unittest import result
-from unittest.signals import registerResult
+try:
+    from unittest import result
+    from unittest.signals import registerResult
+except ImportError:
+    from unittest2 import result
+    from unittest2.signals import registerResult
 from contextlib import contextmanager
 import termstyle
 import yaml

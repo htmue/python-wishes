@@ -7,9 +7,10 @@ import os.path
 import re
 import sys
 from cStringIO import StringIO
-from itertools import combinations_with_replacement
 
 import yaml
+
+from compat import combinations_with_replacement
 
 
 class ParseError(Exception):

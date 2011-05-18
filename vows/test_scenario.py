@@ -3,11 +3,12 @@
 #=============================================================================
 #   test_scenario.py --- Wishes scenario vows
 #=============================================================================
-import unittest
 from functools import partial
+
 import mock
 from should_dsl import should
 
+from wishes.compat import unittest
 from wishes.feature import Scenario, step, StepDefinition, world, StepDefinitionError
 
 

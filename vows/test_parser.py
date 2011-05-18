@@ -4,7 +4,6 @@
 #   test_parser.py --- Wishes parser vows
 #=============================================================================
 import os.path
-import unittest
 from cStringIO import StringIO
 from functools import partial
 
@@ -12,6 +11,7 @@ import mock
 import yaml
 from should_dsl import should
 
+from wishes.compat import unittest
 from wishes.parser import Parser, ParseError
 
 

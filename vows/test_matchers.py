@@ -3,12 +3,11 @@
 #=============================================================================
 #   test_matchers.py --- 
 #=============================================================================
-import unittest
-
 import mock
 from should_dsl import should, should_not
 
 from vows import EachEqual
+from wishes.compat import unittest
 
 
 class EachEqualTest(unittest.TestCase):

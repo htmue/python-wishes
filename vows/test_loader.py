@@ -3,12 +3,12 @@
 #=============================================================================
 #   test_loader.py --- Feature test loader vows
 #=============================================================================
-import unittest
 from functools import partial
 
 from should_dsl import should
 
 from wishes import loader
+from wishes.compat import unittest
 from wishes.feature import Scenario
 
 

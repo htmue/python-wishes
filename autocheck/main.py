@@ -8,7 +8,10 @@ import logging
 import os
 import signal
 import sys
-from unittest.main import TestProgram
+try:
+    from unittest.main import TestProgram
+except ImportError:
+    from unittest2.main import TestProgram
 
 from autorunner import AutocheckObserver
 from testrunner import TestRunner
@@ -53,7 +56,7 @@ def autocheck(args):
 
 def main(args=sys.argv):
     if '--single' in args:
-        if args[1:3] == ['-m', 'autocheck']:
+        if args[1] == '-m' and args[2] in ('autocheck', 'autocheck.main'):
             args[1:3] = []
         args.remove('--single')
         single(args)
@@ -61,6 +64,9 @@ def main(args=sys.argv):
         autocheck(args)
 
 if __name__ == '__main__':
+    if sys.argv[0].endswith('main.py'):
+        sys.argv[0:1] = [os.path.abspath(sys.executable), '-m', 'autocheck.main']
+
     main()
 
 #.............................................................................
