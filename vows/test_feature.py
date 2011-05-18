@@ -224,9 +224,9 @@ class FeatureTest(unittest.TestCase):
               | <key>   | value         |
               | the     | <placeholder> |
           Examples:
-            | <key>   | <placeholder> |
-            | key       | first         |
-            | but       | second        |
+            | <key> | <placeholder> |
+            | key   | first         |
+            | but   | second        |
         ''')
         world.run = []
         result = unittest.TestResult()
@@ -236,6 +236,30 @@ class FeatureTest(unittest.TestCase):
         world.run |should| each_be_equal_to([
             [dict(key='the', value='first')],
             [dict(but='the', value='second')],
+        ])
+
+    def test_can_run_feature_with_scenario_outline_with_background(self):
+        @step('a (.*)')
+        def a_something(step, value):
+            world.run.append(value)
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Background: with placeholder
+            Given a <placeholder>
+          Scenario Outline: follows
+            And a step
+          Examples:
+            | <placeholder> |
+            | first         |
+            | second        |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            'first', 'step', 'second', 'step',
         ])
 
 

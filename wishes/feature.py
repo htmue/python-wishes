@@ -80,6 +80,12 @@ class Scenario(object):
         self.background = background
         if outline is not None:
             self.outline, self.example = outline
+            background_outline = self.outline.background
+            if background_outline is not None:
+                self.background = Scenario(
+                    title=background_outline.title,
+                    outline=(background_outline, self.example),
+                )
             self.title = fill_from_example(self.outline.title, self.example)
             self.create_steps_from_outline()
         else:

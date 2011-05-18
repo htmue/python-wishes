@@ -61,7 +61,7 @@ class Handler(object):
         self.background = self.scenario
     
     def start_outline(self, title):
-        self.scenario = self.Scenario(title)
+        self.scenario = self.Scenario(title, background=self.background)
     
     def finish_outline(self):
         self.outline = self.scenario

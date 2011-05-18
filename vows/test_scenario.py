@@ -103,5 +103,20 @@ class ScenarioTest(unittest.TestCase):
         step.kind |should| be_equal_to('Given')
         step.text |should| be_equal_to('a value unique')
 
+    def test_can_be_created_from_outline_background_and_hash(self):
+        background = Scenario('Test background')
+        background.add_step('Given', 'a value <value>')
+        outline = Scenario('Test outline', background=background)
+        outline.add_step('Given', 'another value')
+        scenario = Scenario('Test scenario', outline=(outline, {'<value>': 'unique'}))
+        scenario.background.step_count |should| be(1)
+        step = scenario.background.steps[0]
+        step.kind |should| be_equal_to('Given')
+        step.text |should| be_equal_to('a value unique')
+        scenario.step_count |should| be(1)
+        step = scenario.steps[0]
+        step.kind |should| be_equal_to('Given')
+        step.text |should| be_equal_to('another value')
+
 #.............................................................................
 #   test_scenario.py
