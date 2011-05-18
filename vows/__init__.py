@@ -23,7 +23,7 @@ class EachEqual(object):
 
     def match(self, given):
         diff = list(self.differ(given))
-        self.diff = '\n\t'.join('%d: %s is not equal to %s' % item for item in diff)
+        self.diff = '\n\t'.join('%d: %r is not equal to %r' % item for item in diff)
         return not diff
     
     def message_for_failed_should(self):
@@ -34,6 +34,9 @@ class EachEqual(object):
 def be_equal_to():
     return (lambda x, y: x == y, '%r is %sequal to %r')
 
+@matcher
+def be_in():
+    return (lambda item, container: item in container, '%r is %sinto %r')
 
 @matcher
 class AssertCalledOnceWith(object):

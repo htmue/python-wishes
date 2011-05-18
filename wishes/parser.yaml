@@ -12,12 +12,14 @@ states:
   feature:
   - [scenario, [start_scenario], scenario]
   - [background, [start_background], background]
+  - [outline, [start_outline], outline]
   - [feature_description, [start_feature_description, data], feature_description]
   - [null, [finish_feature], null]
 
   feature_description:
   - [scenario, [finish_feature_description, start_scenario], scenario]
   - [background, [finish_feature_description, start_background], background]
+  - [outline, [finish_feature_description, start_outline], outline]
   - [feature_description, [data], feature_description]
   - [null, [finish_feature_description, finish_feature], null]
 
@@ -25,18 +27,20 @@ states:
   - [step, [start_step], step]
   - [scenario, [finish_scenario, start_scenario], scenario]
   - [background, [finish_scenario, start_background], background]
+  - [outline, [finish_scenario, start_outline], outline]
   - [null, [finish_scenario, finish_feature], null]
 
   step:
   - [step, [finish_step, start_step], step]
   - [scenario, [finish_step, finish_scenario, start_scenario], scenario]
   - [background, [finish_step, finish_scenario, start_background], background]
+  - [outline, [finish_step, finish_scenario, start_outline], outline]
   - [multiline, [start_multiline], multiline]
   - [hash, [start_hash], hash]
   - [null, [finish_step, finish_scenario, finish_feature], null]
 
   multiline:
-  - [multiline_end, [finish_multiline, finish_step], scenario]
+  - [multiline_end, [finish_multiline], step]
   - [multiline_data, [multiline_data], multiline]
   
   hash:
@@ -44,30 +48,65 @@ states:
   - [step, [finish_hash, finish_step, start_step], step]
   - [scenario, [finish_hash, finish_step, finish_scenario, start_scenario], scenario]
   - [background, [finish_hash, finish_step, finish_scenario, start_background], background]
+  - [outline, [finish_hash, finish_step, finish_scenario, start_outline], outline]
   - [null, [finish_hash, finish_step, finish_scenario, finish_feature], null]
 
   background:
   - [step, [start_step], background_step]
   - [scenario, [finish_background, start_scenario], scenario]
   - [background, [finish_background, start_background], background]
+  - [outline, [finish_background, start_outline], outline]
   - [null, [finish_background, finish_feature], null]
 
   background_step:
   - [step, [finish_step, start_step], background_step]
   - [scenario, [finish_step, finish_background, start_scenario], scenario]
+  - [outline, [finish_step, finish_background, start_outline], outline]
   - [multiline, [start_multiline], background_multiline]
   - [hash, [start_hash], background_hash]
   - [null, [finish_step, finish_background, finish_feature], null]
 
   background_multiline:
-  - [multiline_end, [finish_multiline, finish_step], background]
+  - [multiline_end, [finish_multiline], background_step]
   - [multiline_data, [multiline_data], background_multiline]
 
   background_hash:
   - [hash, [hash_line], background_hash]
   - [step, [finish_hash, finish_step, start_step], background_step]
   - [scenario, [finish_hash, finish_step, finish_background, start_scenario], scenario]
+  - [outline, [finish_hash, finish_step, finish_background, start_outline], outline]
   - [null, [finish_hash, finish_step, finish_background, finish_feature], null]
+
+  outline:
+  - [step, [start_step], outline_step]
+  - [examples, [finish_outline, start_examples], examples]
+  - [null, [finish_outline, finish_feature], null]
+
+  outline_step:
+  - [step, [finish_step, start_step], outline_step]
+  - [examples, [finish_step, finish_outline, start_examples], examples]
+  - [multiline, [start_multiline], outline_multiline]
+  - [hash, [start_hash], outline_hash]
+  - [null, [finish_step, finish_outline, finish_feature], null]
+
+  outline_multiline:
+  - [multiline_end, [finish_multiline], outline_step]
+  - [multiline_data, [multiline_data], outline_multiline]
+
+  outline_hash:
+  - [hash, [hash_line], outline_hash]
+  - [step, [finish_hash, finish_step, start_step], outline_step]
+  - [examples, [finish_hash, finish_step, finish_outline, start_examples], examples]
+  - [null, [finish_hash, finish_step, finish_outline, finish_feature], null]
+
+  examples:
+  - [hash, [start_hash], examples_hash]
+  - [null, [finish_hash, finish_examples, finish_feature], null]
+
+  examples_hash:
+  - [hash, [hash_line], examples_hash]
+  - [examples, [finish_hash, finish_examples, start_examples], examples]
+  - [null, [finish_hash, finish_examples, finish_feature], null]
 
 
 patterns:
@@ -75,6 +114,8 @@ patterns:
   feature_description: '\s*(.*)'
   scenario: '\s*Scenario:(.*)'
   background: '\s*Background:(.*)'
+  outline: '\s*Scenario Outline:(.*)'
+  examples: '\s*(?:Scenarios|Examples):(.*)'
   step: '\s*(Given|When|Then|And|But)\s+(.*)'
   multiline: '(\s*""")'
   multiline_data: '(.*)'

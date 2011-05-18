@@ -7,11 +7,11 @@ import re
 import unicodedata
 import unittest
 
-from feature import FeatureTest, Scenario
-from parser import Parser, LogHandler
+from feature import FeatureTest, Scenario, Hashes
+from parser import Parser
 
 
-class Handler(LogHandler):
+class Handler(object):
     
     def __init__(self, test_case_class=None, scenario_class=None):
         if test_case_class is None:
@@ -60,6 +60,24 @@ class Handler(LogHandler):
     def finish_background(self):
         self.background = self.scenario
     
+    def start_outline(self, title):
+        self.scenario = self.Scenario(title, background=self.background)
+    
+    def finish_outline(self):
+        self.outline = self.scenario
+    
+    def start_examples(self, title):
+        self.examples = self.make_example_name(title)
+    
+    def finish_examples(self):
+        self.hashes.fix_keys_for_outline()
+        for n, example in enumerate(self.hashes):
+            scenario = self.Scenario(outline=(self.outline, example))
+            title = '%s %d %s' % (scenario.title, n + 1, self.examples)
+            scenario_method = self.make_scenario_method_name(title)
+            self.Feature.add_scenario(scenario_method, scenario)
+        self.hashes = None
+    
     def start_step(self, kind, statement):
         self.step = kind, statement
     
@@ -81,24 +99,26 @@ class Handler(LogHandler):
         self.lines = None
     
     def start_hash(self, *keys):
-        self.hash_keys = keys
-        self.hashes = []
+        self.hashes = Hashes(keys)
     
     def hash_data(self, *values):
-        self.hashes.append(dict(zip(self.hash_keys, values)))
+        self.hashes.add_row(values)
     
     def finish_hash(self):
-        self.hash_keys = None
+        pass
     
     def data(self, data):
         if self.lines is not None:
             self.lines.append(data)
-
+    
     def make_feature_name(self, title):
         return 'Feature_' + slugify(title)
     
     def make_scenario_method_name(self, title):
         return 'test_Scenario_' + slugify(title)
+    
+    def make_example_name(self, title):
+        return 'Example_' + slugify(title)
 
 def slugify(value):
     value = unicodedata.normalize('NFKD', value.decode('utf-8')).encode('ascii', 'ignore')

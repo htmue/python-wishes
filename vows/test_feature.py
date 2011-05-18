@@ -68,7 +68,7 @@ class FeatureTest(unittest.TestCase):
         result.wasSuccessful() |should| be(True)
         world.background_step |should| be(2)
         world.steps_run |should| be_equal_to([1, 2])
-
+    
     
     def test_can_run_feature_with_multiple_backgrounds(self):
         @step('background step ([0-9]+)')
@@ -95,7 +95,7 @@ class FeatureTest(unittest.TestCase):
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
         world.steps_run |should| be_equal_to([1, 2])
-
+    
     def test_can_run_feature_with_multiline_step(self):
         @step('multiline step')
         def multiline_step(step):
@@ -114,7 +114,7 @@ class FeatureTest(unittest.TestCase):
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
         world.multiline |should| be_equal_to('multiline content\n')
-
+    
     def test_can_run_feature_with_hashes_step(self):
         @step('step with hashes')
         def step_with_hashes(step):
@@ -132,11 +132,11 @@ class FeatureTest(unittest.TestCase):
         feature.run(result)
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
-        world.hashes |should| each_be_equal_to([
+        list(world.hashes) |should| each_be_equal_to([
             dict(first='first 1', second='second 1', third='third 1'),
             dict(first='first 2', second='second 2', third='third 2'),
         ])
-
+    
     def test_can_run_feature_with_hashes_in_background_step(self):
         @step('step with hashes')
         def step_with_hashes(step):
@@ -163,6 +163,105 @@ class FeatureTest(unittest.TestCase):
             dict(first='first 1', second='second 1', third='third 1'),
             dict(first='first 2', second='second 2', third='third 2'),
         ])
+    
+    def test_can_run_feature_with_scenario_outline_and_examples(self):
+        @step('a (.*) with (.*)')
+        def a_key_with_value(step, key, value):
+            world.run.append((key, value))
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario Outline: follows
+            Given a <key> with <value>
+          Examples:
+            | key   | value     |
+            | key 1 | value 1   |
+            | key 2 | value 2   |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            ('key 1', 'value 1'),
+            ('key 2', 'value 2'),
+        ])
+    
+    def test_can_run_feature_with_scenario_outline_with_multiline(self):
+        @step('a multiline')
+        def a_multiline(step):
+            world.run.append(step.multiline)
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario Outline: follows
+            Given a multiline
+              """
+              with <placeholder>
+              """
+          Examples:
+            | <placeholder> |
+            | first         |
+            | second        |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            'with first\n',
+            'with second\n',
+        ])
+    
+    def test_can_run_feature_with_scenario_outline_with_hashes(self):
+        @step('a hash')
+        def a_hash(step):
+            world.run.append(list(step.hashes))
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Scenario Outline: follows
+            Given a hash
+              | <key>   | value         |
+              | the     | <placeholder> |
+          Examples:
+            | <key> | <placeholder> |
+            | key   | first         |
+            | but   | second        |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            [dict(key='the', value='first')],
+            [dict(but='the', value='second')],
+        ])
+
+    def test_can_run_feature_with_scenario_outline_with_background(self):
+        @step('a (.*)')
+        def a_something(step, value):
+            world.run.append(value)
+        feature = load_feature('''
+        Feature: with multiline scenarnio
+          Background: with placeholder
+            Given a <placeholder>
+          Scenario Outline: follows
+            And a step
+          Examples:
+            | <placeholder> |
+            | first         |
+            | second        |
+        ''')
+        world.run = []
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+        world.run |should| each_be_equal_to([
+            'first', 'step', 'second', 'step',
+        ])
+
 
 #.............................................................................
 #   test_feature.py

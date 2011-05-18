@@ -1,529 +1,858 @@
 # -*- coding:utf-8 -*-
 # Created by Hans-Thomas on 2011-05-11.
 #=============================================================================
-#   test_parser_callbacks.yaml --- Wishes parser vows callbacks
+#   test_parser.yaml --- Wishes parser vows, data driven
 #=============================================================================
 
-recognizes Feature keyword:
-  input: 'Feature: Parse feature file'
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+callbacks:
+
+  reports start and end:
+    tested_events:
+    - [start, null]
+
+    input: ''
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [finish_parse, [], {}]
+
+  recognizes Feature keyword:
+    tested_events:
+    - [start, feature]
+    - [feature, null]
+
+    input: 'Feature: Parse feature file'
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature and description:
-  input: |
-    Feature: Parse feature file
-      As a developer
-      I want to have a nice testing tool
-      so coding is fun.
+  parses Feature and description:
+    tested_events:
+    - [feature, feature_description]
+    - [feature_description, feature_description]
+    - [feature_description, null]
+
+    input: |
+      Feature: Parse feature file
+        As a developer
+        I want to have a nice testing tool
+        so coding is fun.
      
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_feature_description, [], {}]
-  - [data, [As a developer], {}]
-  - [data, [I want to have a nice testing tool], {}]
-  - [data, [so coding is fun.], {}]
-  - [finish_feature_description, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_feature_description, [], {}]
+    - [data, [As a developer], {}]
+    - [data, [I want to have a nice testing tool], {}]
+    - [data, [so coding is fun.], {}]
+    - [finish_feature_description, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature and Scenario keyword:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
+  parses Feature and Scenario keyword:
+    tested_events:
+    - [feature, scenario]
+    - [scenario, null]
+  
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
 
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature with description and Scenario:
-  input: |
-    Feature: Parse feature file
-      As a developer
-      I want to have a nice testing tool
-      so coding is fun.
+  parses Feature with description and Scenario:
+    tested_events:
+    - [feature_description, scenario]
+  
+    input: |
+      Feature: Parse feature file
+        As a developer
+        I want to have a nice testing tool
+        so coding is fun.
 
-      Scenario: Test what is going on
+        Scenario: Test what is going on
      
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_feature_description, [], {}]
-  - [data, [As a developer], {}]
-  - [data, [I want to have a nice testing tool], {}]
-  - [data, [so coding is fun.], {}]
-  - [data, [''], {}]
-  - [finish_feature_description, [], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_feature_description, [], {}]
+    - [data, [As a developer], {}]
+    - [data, [I want to have a nice testing tool], {}]
+    - [data, [so coding is fun.], {}]
+    - [data, [''], {}]
+    - [finish_feature_description, [], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature Scenario and Given keyword:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        Given there is a step
+  parses Scenario after pending Scenario:
+    tested_events:
+    - [scenario, scenario]
+
+    input: |
+      Feature: Parse feature file
+        Scenario: pending
+        Scenario: afterwards
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [pending], {}]
+    - [finish_scenario, [], {}]
+    - [start_scenario, [afterwards], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses Feature Scenario and Given keyword:
+    tested_events:
+    - [scenario, step]
+    - [step, null]
+  
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          Given there is a step
        
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [Given, there is a step], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [Given, there is a step], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature Scenario and When keyword:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        When there is some action
+  parses Feature Scenario and When keyword:
+    tested_events:
+    - [scenario, step]
+
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          When there is some action
        
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [When, there is some action], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [When, there is some action], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature Scenario and Then keyword:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        Then I see some results
+  parses Feature Scenario and Then keyword:
+    tested_events:
+    - [scenario, step]
+
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          Then I see some results
        
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [Then, I see some results], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [Then, I see some results], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature Scenario and And keyword:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        And there is more
+  parses Feature Scenario and And keyword:
+    tested_events:
+    - [scenario, step]
+
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          And there is more
      
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [And, there is more], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [And, there is more], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature Scenario and But keyword:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        But there is something else
+  parses Feature Scenario and But keyword:
+    tested_events:
+    - [scenario, step]
+
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          But there is something else
        
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [But, there is something else], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [But, there is something else], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature Scenario and Steps:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        Given there is a step
-        And there is more
-        When there is some action
-        Then I see some results
-        But there is something else
+  parses Feature Scenario and Steps:
+    tested_events:
+    - [step, step]
+
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          Given there is a step
+          And there is more
+          When there is some action
+          Then I see some results
+          But there is something else
        
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [Given, there is a step], {}]
-  - [finish_step, [], {}]
-  - [start_step, [And, there is more], {}]
-  - [finish_step, [], {}]
-  - [start_step, [When, there is some action], {}]
-  - [finish_step, [], {}]
-  - [start_step, [Then, I see some results], {}]
-  - [finish_step, [], {}]
-  - [start_step, [But, there is something else], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [Given, there is a step], {}]
+    - [finish_step, [], {}]
+    - [start_step, [And, there is more], {}]
+    - [finish_step, [], {}]
+    - [start_step, [When, there is some action], {}]
+    - [finish_step, [], {}]
+    - [start_step, [Then, I see some results], {}]
+    - [finish_step, [], {}]
+    - [start_step, [But, there is something else], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses multiline:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        Given there is a step
-          """
-          With some
-                indented
-            multiline text.
-          """
-       
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [Given, there is a step], {}]
-  - [start_multiline, [6], {}]
-  - [data, ["With some\n"], {}]
-  - [data, ["      indented\n"], {}]
-  - [data, ["  multiline text.\n"], {}]
-  - [finish_multiline, [], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
-
-
-parses multiline between steps:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        Given there is a step
-          """
-          With some multiline text.
-          """
-        And another step afterwards
-       
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [Given, there is a step], {}]
-  - [start_multiline, [6], {}]
-  - [data, ["With some multiline text.\n"], {}]
-  - [finish_multiline, [], {}]
-  - [finish_step, [], {}]
-  - [start_step, [And, another step afterwards], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
-
-
-parses multiline before new scenario:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        Given there is a step
-          """
-          With some multiline text.
-          """
-      Scenario: And another scenario behind
-       
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [Given, there is a step], {}]
-  - [start_multiline, [6], {}]
-  - [data, ["With some multiline text.\n"], {}]
-  - [finish_multiline, [], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [start_scenario, [And another scenario behind], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
-
-
-parses multiline with indented multiline marker:
-  input: |
-    Feature: Parse feature file
-      Scenario: Test what is going on
-        Given a multiline
-          """
+  parses multiline:
+    tested_events:
+    - [step, multiline]
+    - [multiline, multiline_data]
+    - [multiline, multiline_end]
+  
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          Given there is a step
             """
-          """
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse feature file], {}]
-  - [start_scenario, [Test what is going on], {}]
-  - [start_step, [Given, a multiline], {}]
-  - [start_multiline, [6], {}]
-  - [data, ["  \"\"\"\n"], {}]
-  - [finish_multiline, [], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+            With some
+                  indented
+              multiline text.
+            """
+       
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [Given, there is a step], {}]
+    - [start_multiline, [6], {}]
+    - [data, ["With some\n"], {}]
+    - [data, ["      indented\n"], {}]
+    - [data, ["  multiline text.\n"], {}]
+    - [finish_multiline, [], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses multiline between steps:
+    tested_events:
+    - [step, step]
+  
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          Given there is a step
+            """
+            With some multiline text.
+            """
+          And another step afterwards
+       
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [Given, there is a step], {}]
+    - [start_multiline, [6], {}]
+    - [data, ["With some multiline text.\n"], {}]
+    - [finish_multiline, [], {}]
+    - [finish_step, [], {}]
+    - [start_step, [And, another step afterwards], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses multiline before new scenario:
+    tested_events:
+    - [step, scenario]
+
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          Given there is a step
+            """
+            With some multiline text.
+            """
+        Scenario: And another scenario behind
+       
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [Given, there is a step], {}]
+    - [start_multiline, [6], {}]
+    - [data, ["With some multiline text.\n"], {}]
+    - [finish_multiline, [], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [start_scenario, [And another scenario behind], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses multiline with indented multiline marker:
+    tested_events: []
+  
+    input: |
+      Feature: Parse feature file
+        Scenario: Test what is going on
+          Given a multiline
+            """
+              """
+            """
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse feature file], {}]
+    - [start_scenario, [Test what is going on], {}]
+    - [start_step, [Given, a multiline], {}]
+    - [start_multiline, [6], {}]
+    - [data, ["  \"\"\"\n"], {}]
+    - [finish_multiline, [], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
   
 
-parses Feature with Background:
-  input: |
-    Feature: with background
-      Background: is here
+  parses Feature with Background:
+    tested_events:
+    - [feature, background]
+    - [background, null]
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_background, [is here], {}]
-  - [finish_background, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
-
-
-parses Feature with description and Background:
-  input: |
-    Feature: with background
-      And some description
-      Background: is here
+    input: |
+      Feature: with background
+        Background: is here
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_feature_description, [], {}]
-  - [data, [And some description], {}]
-  - [finish_feature_description, [], {}]
-  - [start_background, [is here], {}]
-  - [finish_background, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_background, [is here], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature with Background and Step:
-  input: |
-    Feature: with background
-      Background: is here
-        And a background step
+  parses Feature with description and Background:
+    tested_events:
+    - [feature_description, background]
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_background, [is here], {}]
-  - [start_step, [And, a background step], {}]
-  - [finish_step, [], {}]
-  - [finish_background, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
-
-
-parses Feature with Background and multiline Step:
-  input: |
-    Feature: with background
-      Background: is here
-        And a background multiline step
-          """
-            With some content
-          """
+    input: |
+      Feature: with background
+        And some description
+        Background: is here
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_background, [is here], {}]
-  - [start_step, [And, a background multiline step], {}]
-  - [start_multiline, [6], {}]
-  - [data, ["  With some content\n"], {}]
-  - [finish_multiline, [], {}]
-  - [finish_step, [], {}]
-  - [finish_background, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_feature_description, [], {}]
+    - [data, [And some description], {}]
+    - [finish_feature_description, [], {}]
+    - [start_background, [is here], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature with Background and Scenario and Step:
-  input: |
-    Feature: with background
-      Background: is here
-      Scenario: with step
-        Given a step
+  parses Feature with Background and Step:
+    tested_events:
+    - [background, step]
+    - [background_step, null]
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_background, [is here], {}]
-  - [finish_background, [], {}]
-  - [start_scenario, [with step], {}]
-  - [start_step, [Given, a step], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
-
-
-parses Feature with Background and Scenarios:
-  input: |
-    Feature: with background
-      Background: is here
-      Scenario: first
-      Scenario: second
+    input: |
+      Feature: with background
+        Background: is here
+          And a background step
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_background, [is here], {}]
-  - [finish_background, [], {}]
-  - [start_scenario, [first], {}]
-  - [finish_scenario, [], {}]
-  - [start_scenario, [second], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_background, [is here], {}]
+    - [start_step, [And, a background step], {}]
+    - [finish_step, [], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature with multiple Backgrounds:
-  input: |
-    Feature: with background
-      Background: first
-      Background: second
+  parses Feature with Background and multiline Step:
+    tested_events:
+    - [background_step, multiline]
+    - [background_multiline, multiline_data]
+    - [background_multiline, multiline_end]
+
+    input: |
+      Feature: with background
+        Background: is here
+          And a background multiline step
+            """
+              With some content
+            """
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_background, [first], {}]
-  - [finish_background, [], {}]
-  - [start_background, [second], {}]
-  - [finish_background, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_background, [is here], {}]
+    - [start_step, [And, a background multiline step], {}]
+    - [start_multiline, [6], {}]
+    - [data, ["  With some content\n"], {}]
+    - [finish_multiline, [], {}]
+    - [finish_step, [], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature with multiple Backgrounds and Scenarios:
-  input: |
-    Feature: with background
-      Background: first
-      Scenario: first
-      Background: second
-      Scenario: second
+  parses Feature with Background and Scenario and Step:
+    tested_events:
+    - [background, scenario]
+    
+    input: |
+      Feature: with background
+        Background: is here
+        Scenario: with step
+          Given a step
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_background, [first], {}]
-  - [finish_background, [], {}]
-  - [start_scenario, [first], {}]
-  - [finish_scenario, [], {}]
-  - [start_background, [second], {}]
-  - [finish_background, [], {}]
-  - [start_scenario, [second], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_background, [is here], {}]
+    - [finish_background, [], {}]
+    - [start_scenario, [with step], {}]
+    - [start_step, [Given, a step], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature with Background after Step:
-  input: |
-    Feature: with background
-      Scenario: at start
-        Given a step
-      Background: here
+  parses Feature with Background and Scenarios:
+    tested_events: []
+
+    input: |
+      Feature: with background
+        Background: is here
+        Scenario: first
+        Scenario: second
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_scenario, [at start], {}]
-  - [start_step, [Given, a step], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [start_background, [here], {}]
-  - [finish_background, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_background, [is here], {}]
+    - [finish_background, [], {}]
+    - [start_scenario, [first], {}]
+    - [finish_scenario, [], {}]
+    - [start_scenario, [second], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses Feature with Background after multiline Step:
-  input: |
-    Feature: with background
-      Scenario: at start
-        Given a multiline step
-          """
-          with content
-          """
-      Background: here
+  parses Feature with multiple Backgrounds:
+    tested_events:
+    - [background, background]
   
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [with background], {}]
-  - [start_scenario, [at start], {}]
-  - [start_step, [Given, a multiline step], {}]
-  - [start_multiline, [6], {}]
-  - [data, ["with content\n"], {}]
-  - [finish_multiline, [], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [start_background, [here], {}]
-  - [finish_background, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    input: |
+      Feature: with background
+        Background: first
+        Background: second
+  
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_background, [first], {}]
+    - [finish_background, [], {}]
+    - [start_background, [second], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
 
-parses hashes:
-  input: |
-    Feature: Parse hashes
-      Scenario: Hashes 
-        Given there is a step
-          | with | a | hash | line |
+  parses Feature with multiple Backgrounds and Scenarios:
+    tested_events:
+    - [scenario, background]
 
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse hashes], {}]
-  - [start_scenario, [Hashes], {}]
-  - [start_step, [Given, there is a step], {}]
-  - [start_hash, [with, a, hash, line], {}]
-  - [finish_hash, [], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+    input: |
+      Feature: with background
+        Background: first
+        Scenario: first
+        Background: second
+        Scenario: second
+  
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_background, [first], {}]
+    - [finish_background, [], {}]
+    - [start_scenario, [first], {}]
+    - [finish_scenario, [], {}]
+    - [start_background, [second], {}]
+    - [finish_background, [], {}]
+    - [start_scenario, [second], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
 
-parses hashes with content:
-  input: |
-    Feature: Parse hashes
-      Scenario: Hashes 
-        Given there is a step
-          | with  | content   |
-          | 1     | content 1 |
-          | 2     | content 2 |
 
-  callbacks:
-  - [start_parse, [<string>], {}]
-  - [start_feature, [Parse hashes], {}]
-  - [start_scenario, [Hashes], {}]
-  - [start_step, [Given, there is a step], {}]
-  - [start_hash, [with, content], {}]
-  - [hash_data, ['1', content 1], {}]
-  - [hash_data, ['2', content 2], {}]
-  - [finish_hash, [], {}]
-  - [finish_step, [], {}]
-  - [finish_scenario, [], {}]
-  - [finish_feature, [], {}]
-  - [finish_parse, [], {}]
+  parses Feature with Background after Step:
+    tested_events:
+    - [step, background]
+
+    input: |
+      Feature: with background
+        Scenario: at start
+          Given a step
+        Background: here
+  
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_scenario, [at start], {}]
+    - [start_step, [Given, a step], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [start_background, [here], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses Feature with Background after multiline Step:
+    tested_events:
+    - [step, background]
+
+    input: |
+      Feature: with background
+        Scenario: at start
+          Given a multiline step
+            """
+            with content
+            """
+        Background: here
+  
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [with background], {}]
+    - [start_scenario, [at start], {}]
+    - [start_step, [Given, a multiline step], {}]
+    - [start_multiline, [6], {}]
+    - [data, ["with content\n"], {}]
+    - [finish_multiline, [], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [start_background, [here], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses hashes:
+    tested_events:
+    - [step, hash]
+    - [hash, null]
+
+    input: |
+      Feature: Parse hashes
+        Scenario: Hashes 
+          Given there is a step
+            | with | a | hash | line |
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse hashes], {}]
+    - [start_scenario, [Hashes], {}]
+    - [start_step, [Given, there is a step], {}]
+    - [start_hash, [with, a, hash, line], {}]
+    - [finish_hash, [], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses hashes with content:
+    tested_events:
+    - [hash, hash]
+
+    input: |
+      Feature: Parse hashes
+        Scenario: Hashes 
+          Given there is a step
+            | with  | content   |
+            | 1     | content 1 |
+            | 2     | content 2 |
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse hashes], {}]
+    - [start_scenario, [Hashes], {}]
+    - [start_step, [Given, there is a step], {}]
+    - [start_hash, [with, content], {}]
+    - [hash_data, ['1', content 1], {}]
+    - [hash_data, ['2', content 2], {}]
+    - [finish_hash, [], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses Scenario Outlines:
+    tested_events:
+    - [feature, outline]
+    - [outline, step]
+    - [outline_step, null]
+
+    input: |
+      Feature: Parse outlines
+        Scenario Outline: follows
+          Given there <is> a <step>
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse outlines], {}]
+    - [start_outline, [follows], {}]
+    - [start_step, [Given, there <is> a <step>], {}]
+    - [finish_step, [], {}]
+    - [finish_outline, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses Scenario Outlines with Examples:
+    tested_events:
+    - [outline_step, examples]
+    - [examples, hash]
+    - [examples_hash, hash]
+    - [examples_hash, null]
+
+    input: |
+      Feature: Parse outlines
+        Scenario Outline: follows
+          Given there <is> a <step>
+        Examples: here
+          | is  | step  |
+          | one | two   |
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse outlines], {}]
+    - [start_outline, [follows], {}]
+    - [start_step, [Given, there <is> a <step>], {}]
+    - [finish_step, [], {}]
+    - [finish_outline, [], {}]
+    - [start_examples, [here], {}]
+    - [start_hash, [is, step], {}]
+    - [hash_data, [one, two], {}]
+    - [finish_hash, [], {}]
+    - [finish_examples, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  contains untested events:
+    tested_events: # untested
+    - [background, outline]
+    - [background_hash, null]
+    - [background_hash, hash]
+    - [background_hash, outline]
+    - [background_hash, scenario]
+    - [background_hash, step]
+    - [background_step, hash]
+    - [background_step, outline]
+    - [background_step, scenario]
+    - [background_step, step]
+    - [examples, null]
+    - [examples_hash, examples]
+    - [feature_description, outline]
+    - [hash, background]
+    - [hash, outline]
+    - [hash, scenario]
+    - [hash, step]
+    - [outline, null]
+    - [outline, examples]
+    - [outline_hash, null]
+    - [outline_hash, examples]
+    - [outline_hash, hash]
+    - [outline_hash, step]
+    - [outline_multiline, multiline_data]
+    - [outline_multiline, multiline_end]
+    - [outline_step, hash]
+    - [outline_step, multiline]
+    - [outline_step, step]
+    - [scenario, outline]
+    - [step, outline]
+  
+
+unreachable transitions:
+  - [background, examples_hash]
+  - [background, outline_multiline]
+  - [background_hash, background]
+  - [background_hash, examples]
+  - [background_hash, examples_hash]
+  - [background_hash, multiline]
+  - [background_hash, outline_multiline]
+  - [background_hash, start]
+  - [background_hash, step]
+  - [background_multiline, background]
+  - [background_multiline, background_hash]
+  - [background_multiline, examples]
+  - [background_multiline, examples_hash]
+  - [background_multiline, feature]
+  - [background_multiline, feature_description]
+  - [background_multiline, hash]
+  - [background_multiline, multiline]
+  - [background_multiline, outline]
+  - [background_multiline, outline_hash]
+  - [background_multiline, outline_multiline]
+  - [background_multiline, outline_step]
+  - [background_multiline, scenario]
+  - [background_multiline, start]
+  - [background_multiline, step]
+  - [background_step, examples_hash]
+  - [examples, background]
+  - [examples, background_step]
+  - [examples, examples]
+  - [examples, outline_multiline]
+  - [feature, background_hash]
+  - [feature, background_step]
+  - [feature, examples]
+  - [feature, examples_hash]
+  - [feature, feature]
+  - [feature, multiline]
+  - [feature, outline_multiline]
+  - [feature, outline_step]
+  - [feature, start]
+  - [feature, step]
+  - [feature_description, background_hash]
+  - [feature_description, background_step]
+  - [feature_description, examples]
+  - [feature_description, examples_hash]
+  - [feature_description, multiline]
+  - [feature_description, outline_multiline]
+  - [feature_description, outline_step]
+  - [feature_description, start]
+  - [feature_description, step]
+  - [hash, background_hash]
+  - [hash, background_step]
+  - [hash, examples]
+  - [hash, examples_hash]
+  - [hash, feature]
+  - [hash, feature_description]
+  - [hash, multiline]
+  - [hash, outline_hash]
+  - [hash, outline_multiline]
+  - [hash, outline_step]
+  - [hash, start]
+  - [multiline, background]
+  - [multiline, background_step]
+  - [multiline, examples]
+  - [multiline, examples_hash]
+  - [multiline, outline_multiline]
+  - [outline, background]
+  - [outline, background_hash]
+  - [outline, background_step]
+  - [outline, examples_hash]
+  - [outline, feature]
+  - [outline, feature_description]
+  - [outline, multiline]
+  - [outline, outline]
+  - [outline, outline_multiline]
+  - [outline, start]
+  - [outline, step]
+  - [outline_hash, background]
+  - [outline_hash, background_hash]
+  - [outline_hash, background_step]
+  - [outline_hash, examples_hash]
+  - [outline_hash, feature]
+  - [outline_hash, feature_description]
+  - [outline_hash, multiline]
+  - [outline_hash, outline]
+  - [outline_hash, outline_multiline]
+  - [outline_hash, scenario]
+  - [outline_hash, start]
+  - [outline_hash, step]
+  - [outline_multiline, background_step]
+  - [outline_multiline, examples_hash]
+  - [outline_step, background]
+  - [outline_step, background_hash]
+  - [outline_step, background_step]
+  - [outline_step, examples_hash]
+  - [outline_step, multiline]
+  - [outline_step, start]
+  - [outline_step, step]
+  - [scenario, background_hash]
+  - [scenario, background_step]
+  - [scenario, examples]
+  - [scenario, examples_hash]
+  - [scenario, feature]
+  - [scenario, feature_description]
+  - [scenario, multiline]
+  - [scenario, outline_multiline]
+  - [scenario, outline_step]
+  - [scenario, start]
+  - [start, background]
+  - [start, background_step]
+  - [start, examples]
+  - [start, examples_hash]
+  - [start, multiline]
+  - [start, outline_multiline]
+  - [start, start]
+  - [start, step]
+  - [step, background_step]
+  - [step, examples]
+  - [step, examples_hash]
+  - [step, outline_multiline]
+  
 
 #.............................................................................
-#   test_parser_callbacks.yaml
+#   test_parser.yaml

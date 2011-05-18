@@ -5,7 +5,9 @@
 #=============================================================================
 import os.path
 import re
+import sys
 from cStringIO import StringIO
+from itertools import combinations_with_replacement
 
 import yaml
 
@@ -45,6 +47,36 @@ class Parser(object):
     def _compile_patterns(self, patterns):
         for key, value in patterns.iteritems():
             yield key, re.compile(value)
+
+    @classmethod
+    def parser_info(cls):
+        events = set()
+        states = set()
+        matchers = set()
+        for state, transitions in cls.config['states'].items():
+            for matcher, _, _ in transitions:
+                states.add(state)
+                matchers.add(matcher)
+                events.add((state, matcher))
+        return events, states, matchers
+    
+    @classmethod
+    def parser_transitions(cls):
+        states = set()
+        reachable_transitions = set()
+        for state, transitions in cls.config['states'].items():
+            for _, _, target in transitions:
+                states.add(state)
+                reachable_transitions.add((state, target))
+        possible_transitions = set(combinations_with_replacement(states, 2))
+        return reachable_transitions, possible_transitions
+    
+    @classmethod
+    def dump_unreachable_transitions(cls, stream=sys.stdout):
+        reachable_transitions, possible_transitions = Parser.parser_transitions()
+        unreachable_transitions = possible_transitions - reachable_transitions
+        unreachable_transitions = sorted(list(t) for t in unreachable_transitions)
+        yaml.dump(unreachable_transitions, stream=stream)
     
     def parse(self, stream):
         self.start_parse(stream)
@@ -107,6 +139,18 @@ class Parser(object):
     
     def finish_background(self):
         self.handler.finish_background()
+    
+    def start_outline(self):
+        self.handler.start_outline(*self.stripped_groups())
+    
+    def finish_outline(self):
+        self.handler.finish_outline()
+    
+    def start_examples(self):
+        self.handler.start_examples(*self.stripped_groups())
+    
+    def finish_examples(self):
+        self.handler.finish_examples()
     
     def start_step(self):
         self.handler.start_step(*self.stripped_groups())
