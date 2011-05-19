@@ -157,6 +157,16 @@ class LoaderTest(unittest.TestCase):
             dict(first='first 1', second='second 1', third='third 1'),
             dict(first='first 2', second='second 2', third='third 2'),
         ])
+    
+    def test_loads_feature_with_description(self):
+        feature = loader.load_feature('''
+        Feature: Load feature file
+            With description
+          Scenario: pending
+        ''')
+        test_case = iter(feature).next()
+        test_case.description |should| be_equal_to('With description')
+        
 
 #.............................................................................
 #   test_loader.py

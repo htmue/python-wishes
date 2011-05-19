@@ -88,7 +88,11 @@ class Parser(object):
         self.finish_parse()
     
     def is_whitespace(self, line):
-        return line is not None and self.whitespace_pattern.match(line)
+        if line is not None:
+            match = self.whitespace_pattern.match(line)
+            if match:
+                self.match = match
+                return True
     
     def handle_line(self, line):
         new_states = self.states[self.current_state]

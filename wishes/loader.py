@@ -47,6 +47,13 @@ class Handler(object):
     def finish_feature(self):
         self.suite = unittest.defaultTestLoader.loadTestsFromTestCase(self.Feature)
     
+    def start_feature_description(self):
+        self.lines = []
+    
+    def finish_feature_description(self):
+        self.Feature.description = ''.join(self.lines)
+        self.lines = None
+    
     def start_scenario(self, title):
         self.scenario_method = self.make_scenario_method_name(title)
         self.scenario = self.Scenario(title, self.background)
@@ -111,6 +118,9 @@ class Handler(object):
         if self.lines is not None:
             self.lines.append(data)
     
+    def whitespace(self, data):
+        self.data(data)
+    
     def make_feature_name(self, title):
         return 'Feature_' + slugify(title)
     
@@ -131,7 +141,7 @@ class Loader(object):
     def load_feature(self, feature, test_case_class=None, scenario_class=None):
         handler = Handler(test_case_class, scenario_class)
         parser = Parser(handler)
-        parser.parse(feature.strip())
+        parser.parse(feature)
         return handler.suite
 
 defaultLoader = Loader()
