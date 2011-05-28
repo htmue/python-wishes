@@ -85,6 +85,16 @@ def compose(iterable):
         return arg
     return compose
 
+def camel_to_underscore(value):
+    def camel_to_underscore():
+        yield value[0]
+        for c in value[1:]:
+            if c.isupper():
+                yield '_'
+                yield c.lower()
+            else:
+                yield c
+    return ''.join(camel_to_underscore())
 
 class TestResult(result.TestResult):
     """A test result class that can print formatted text results to a stream.
@@ -94,15 +104,32 @@ class TestResult(result.TestResult):
     separator1 = '=' * 70
     separator2 = '-' * 70
     
-    def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1, colourscheme='light', specs=False):
+    def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1, colourscheme='light'):
         super(TestResult, self).__init__()
         self.scheme = colourscheme if isinstance(colourscheme, ColourScheme) else ColourScheme(colourscheme)
         self.stream = stream if isinstance(stream, ColourWritelnDecorator) else ColourWritelnDecorator(stream)
         self.showAll = verbosity > 1
+        self.specs = descriptions and self.showAll
         self.dots = verbosity == 1
         self.descriptions = descriptions
-        self.specs = specs
         self.success_count = 0
+        self.current_class = None
+    
+    def getSpecDescription(self, test):
+        if self.specs:
+            doc_first_line = test.shortDescription()
+            if self.descriptions and doc_first_line:
+                spec = doc_first_line
+            else:
+                spec = self.specify(test)
+            if test.__class__ != self.current_class:
+                self.current_class = test.__class__
+                prefix = self.specify_class()
+            else:
+                prefix = '  '
+            return prefix + spec
+        else:
+            return self.getDescription(test)
     
     def getDescription(self, test):
         doc_first_line = test.shortDescription()
@@ -111,6 +138,18 @@ class TestResult(result.TestResult):
         else:
             return str(test)
     
+    def specify(self, test):
+        if test._testMethodName.startswith('test_'):
+            return test._testMethodName[5:].replace('_', ' ')
+        else:
+            return str(test)
+    
+    def specify_class(self):
+        name = self.current_class.__name__
+        if name.endswith('Test') or name.endswith('Vows'):
+            name = name[:-4]
+        return '\n%s:\n  ' % ' '.join(camel_to_underscore(name).replace('_', ' ').split())
+    
     def _write(self, all, dots, colour):
         if self.showAll and all is not None:
             self.stream.writeln(all, colour=colour)
@@ -118,10 +157,14 @@ class TestResult(result.TestResult):
             self.stream.write(dots, colour=colour)
             self.stream.flush()
     
+    def _write_scenario_result_indent(self, test):
+        if self.specs and getattr(test, 'is_scenario', False):
+            self.stream.write('  ... ')
+    
     def startTest(self, test):
         super(TestResult, self).startTest(test)
         if self.showAll:
-            self.stream.write(self.getDescription(test))
+            self.stream.write(self.getSpecDescription(test))
             self.stream.write(' ... ')
             if self.specs and getattr(test, 'is_scenario', False):
                 self.stream.writeln()
@@ -130,30 +173,38 @@ class TestResult(result.TestResult):
     def addSuccess(self, test):
         super(TestResult, self).addSuccess(test)
         self.success_count += 1
+        self._write_scenario_result_indent(test)
         self._write('ok', '.', colour=self.scheme.ok)
     
     def addError(self, test, err):
         super(TestResult, self).addError(test, err)
+        self._write_scenario_result_indent(test)
         self._write('ERROR', 'E', colour=self.scheme.error)
     
     def addFailure(self, test, err):
         super(TestResult, self).addFailure(test, err)
+        self._write_scenario_result_indent(test)
         self._write('FAIL', 'F', colour=self.scheme.fail)
     
     def addSkip(self, test, reason):
         super(TestResult, self).addSkip(test, reason)
         colour = self.scheme.skip
         if self.showAll:
+            self._write_scenario_result_indent(test)
             self._write('skipped {0!r}'.format(reason), None, colour=colour)
         elif self.dots:
             self._write(None, 's', colour=colour)
     
     def addExpectedFailure(self, test, err):
         super(TestResult, self).addExpectedFailure(test, err)
+        if self.showAll:
+            self._write_scenario_result_indent(test)
         self._write('expected failure', 'x', colour=self.scheme.expected_failure)
     
     def addUnexpectedSuccess(self, test):
         super(TestResult, self).addUnexpectedSuccess(test)
+        if self.showAll:
+            self._write_scenario_result_indent(test)
         self._write('unexpected success', 'u', colour=self.scheme.unexpected_success)
     
     def startStep(self, step):
@@ -161,17 +212,25 @@ class TestResult(result.TestResult):
             self.stream.write('    %s ... ' % step)
             self.stream.flush()
     
+    def stopStep(self, step):
+        if self.specs and self.showAll:
+            self.stream.writeln()
+    
     def addStepSuccess(self, step):
-        if self.specs:
-            self._write('ok', None, colour=self.scheme.ok)
+        if self.specs and self.showAll:
+            self.stream.write('ok', colour=self.scheme.ok)
     
     def addStepError(self, step):
-        if self.specs:
-            self._write('error', None, colour=self.scheme.error)
+        if self.specs and self.showAll:
+            self.stream.write('error', colour=self.scheme.error)
     
     def addStepFailure(self, step):
-        if self.specs:
-            self._write('fail', None, colour=self.scheme.fail)
+        if self.specs and self.showAll:
+            self.stream.write('fail', colour=self.scheme.fail)
+    
+    def addStepUndefined(self, step):
+        if self.specs and self.showAll:
+            self.stream.write('undefined', colour=self.scheme.skip)
     
     def printErrors(self):
         if self.dots or self.showAll:
