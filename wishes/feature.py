@@ -171,7 +171,7 @@ class StepDefinition(object):
     step_definitions = []
     
     def __init__(self, pattern, definition):
-        self.pattern = re.compile(pattern)
+        self.pattern = re.compile(pattern, re.IGNORECASE)
         self.definition = definition
         self.add_step_definition(self)
     

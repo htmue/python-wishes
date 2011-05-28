@@ -63,6 +63,13 @@ class StepTest(unittest.TestCase):
         filled_step.hashes |should| each_be_equal_to([
             {'a key': 'value', 'key': 'a value'},
         ])
+    
+    def test_is_looked_up_case_insensitive(self):
+        @step('miXed Case definItion')
+        def mixed_case_definition(step):
+            pass
+        step_ = Step('Given', 'a MixeD case Definition')
+        step_ |should| be_defined
 
 
 class HashesTest(unittest.TestCase):
