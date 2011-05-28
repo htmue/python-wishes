@@ -39,7 +39,7 @@ class FeatureTest(unittest.TestCase):
         result = unittest.TestResult()
         feature.run(result)
         len(result.skipped) |should| be(1)
-        result.skipped[0][1] |should| be_equal_to('pending 1 step(s)')
+        result.skipped[0][1] |should| start_with('pending 1 step(s):')
         run = world.there_is_a_step, world.another_step, world.steps_afterwards
         run |should| be_equal_to((True, True, False))
     
@@ -236,7 +236,7 @@ class FeatureTest(unittest.TestCase):
             [dict(key='the', value='first')],
             [dict(but='the', value='second')],
         ])
-
+    
     def test_can_run_feature_with_scenario_outline_with_background(self):
         @step('a (.*)')
         def a_something(step, value):

@@ -34,7 +34,7 @@ class ScenarioTest(unittest.TestCase):
         scenario = Scenario('Test scenario')
         scenario.add_step('Given', 'there is a step')
         scenario.step_count_undefined |should| be(1)
-
+    
     def test_knows_number_of_defined_steps(self):
         @step('there is a step')
         def there_is_a_step(step):
@@ -42,7 +42,7 @@ class ScenarioTest(unittest.TestCase):
         scenario = Scenario('Test scenario')
         scenario.add_step('Given', 'there is a step')
         scenario.step_count_defined |should| be(1)
-
+    
     @mock.patch('wishes.feature.FeatureTest')
     def test_can_run_step(self, FeatureTest):
         @step('there is a step')
@@ -54,7 +54,7 @@ class ScenarioTest(unittest.TestCase):
         self.run_count = 0
         scenario.run(feature)
         self.run_count |should| be(1)
-
+    
     @mock.patch('wishes.feature.FeatureTest')
     def test_can_run_steps(self, FeatureTest):
         @step('there is step ([0-9]+)')
@@ -67,7 +67,7 @@ class ScenarioTest(unittest.TestCase):
         world.steps_run = []
         scenario.run(feature)
         world.steps_run |should| each_be_equal_to(range(3))
-
+    
     @mock.patch('wishes.feature.FeatureTest')
     def test_stops_at_the_first_undefined_step(self, FeatureTest):
         @step('there is step ([0-9]+)')
@@ -82,13 +82,13 @@ class ScenarioTest(unittest.TestCase):
         world.steps_run = []
         scenario.run(feature)
         world.steps_run |should| each_be_equal_to(range(3))
-
+    
     def test_can_add_multiline_step(self):
         scenario = Scenario('Test scenario')
         scenario.add_step('Given', 'multiline', multilines=['line\n'])
         scenario.step_count |should| be(1)
         scenario.steps[0].multilines |should| be_equal_to(['line\n'])
-
+    
     def test_can_add_hashes_step(self):
         scenario = Scenario('Test scenario')
         scenario.add_step('Given', 'hashes', hashes=[dict(key='value')])
@@ -103,7 +103,7 @@ class ScenarioTest(unittest.TestCase):
         step = scenario.steps[0]
         step.kind |should| be_equal_to('Given')
         step.text |should| be_equal_to('a value unique')
-
+    
     def test_can_be_created_from_outline_background_and_hash(self):
         background = Scenario('Test background')
         background.add_step('Given', 'a value <value>')
@@ -118,7 +118,7 @@ class ScenarioTest(unittest.TestCase):
         step = scenario.steps[0]
         step.kind |should| be_equal_to('Given')
         step.text |should| be_equal_to('another value')
-
+    
     def test_raises_exception_when_multiple_step_definitions_match(self):
         @step('is step ([0-9]+)')
         def is_step_number(step, number):
@@ -129,7 +129,14 @@ class ScenarioTest(unittest.TestCase):
         scenario = Scenario('Test scenario')
         add_step = partial(scenario.add_step, 'Given', 'there is step 1')
         add_step |should| throw(StepDefinitionError)
-
+    
+    @mock.patch('wishes.feature.FeatureTest')
+    def test_displays_pending_steps_in_skip_reason(self, FeatureTest):
+        feature = FeatureTest()
+        scenario = Scenario('Test scenario')
+        scenario.add_step('Given', 'there is a step')
+        scenario.run(feature)
+        feature.skipTest |should| be_called_once_with('pending 1 step(s): [<Given there is a step>]')
 
 #.............................................................................
 #   test_scenario.py

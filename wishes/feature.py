@@ -99,7 +99,7 @@ class Scenario(object):
             self.background.run(feature)
         for step in self.steps:
             if step.is_undefined:
-                feature.skipTest('pending %d step(s)' % self.step_count_undefined)
+                feature.skipTest('pending %d step(s): %s' % (self.step_count_undefined, self.undefined_steps))
                 return
             step.run()
     
@@ -142,6 +142,15 @@ class Step(object):
         self.definition, self.match = StepDefinition.get_step_definition(kind, text)
         self.multilines = [] if multilines is None else multilines
         self.hashes = Hashes() if hashes is None else hashes
+    
+    def __unicode__(self):
+        return unicode(self.text)
+    
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+    
+    def __repr__(self):
+        return '<%s %s>' % (self.kind, self)
     
     @property
     def is_defined(self):
