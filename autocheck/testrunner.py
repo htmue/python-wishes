@@ -30,12 +30,12 @@ class ColourDecorator(object):
     """Used to decorate file-like objects' 'write' method to accept colours"""
     def __init__(self, stream):
         self.stream = stream
-
+    
     def __getattr__(self, attr):
         if attr in ('stream', '__getstate__'):
             raise AttributeError(attr)
         return getattr(self.stream, attr)
-
+    
     def write(self, arg=None, colour=None):
         if arg:
             if colour is not None:
@@ -47,12 +47,12 @@ class ColourWritelnDecorator(ColourDecorator):
     """Used to decorate file-like objects with a handy 'writeln' method"""
     def __init__(self, stream):
         self.stream = stream
-
+    
     def __getattr__(self, attr):
         if attr in ('stream', '__getstate__'):
             raise AttributeError(attr)
         return getattr(self.stream, attr)
-
+    
     def writeln(self, arg=None, colour=None):
         if arg:
             self.write(arg, colour=colour)
@@ -67,7 +67,7 @@ class ColourScheme(object):
             self.scheme = yaml.load(open(filename))
         else:
             self.scheme = scheme
-
+    
     def __getattr__(self, key):
         if self.scheme is not None:
             colour = self.scheme.get(key)
@@ -88,21 +88,22 @@ def compose(iterable):
 
 class TestResult(result.TestResult):
     """A test result class that can print formatted text results to a stream.
-
+    
     Used by TestRunner.
     """
     separator1 = '=' * 70
     separator2 = '-' * 70
-
-    def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1, colourscheme='light'):
+    
+    def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1, colourscheme='light', specs=False):
         super(TestResult, self).__init__()
         self.scheme = colourscheme if isinstance(colourscheme, ColourScheme) else ColourScheme(colourscheme)
         self.stream = stream if isinstance(stream, ColourWritelnDecorator) else ColourWritelnDecorator(stream)
         self.showAll = verbosity > 1
         self.dots = verbosity == 1
         self.descriptions = descriptions
+        self.specs = specs
         self.success_count = 0
-
+    
     def getDescription(self, test):
         doc_first_line = test.shortDescription()
         if self.descriptions and doc_first_line:
@@ -116,27 +117,29 @@ class TestResult(result.TestResult):
         elif self.dots and dots is not None:
             self.stream.write(dots, colour=colour)
             self.stream.flush()
-
+    
     def startTest(self, test):
         super(TestResult, self).startTest(test)
         if self.showAll:
             self.stream.write(self.getDescription(test))
             self.stream.write(' ... ')
+            if self.specs and getattr(test, 'is_scenario', False):
+                self.stream.writeln()
             self.stream.flush()
-
+    
     def addSuccess(self, test):
         super(TestResult, self).addSuccess(test)
         self.success_count += 1
         self._write('ok', '.', colour=self.scheme.ok)
-
+    
     def addError(self, test, err):
         super(TestResult, self).addError(test, err)
         self._write('ERROR', 'E', colour=self.scheme.error)
-
+    
     def addFailure(self, test, err):
         super(TestResult, self).addFailure(test, err)
         self._write('FAIL', 'F', colour=self.scheme.fail)
-
+    
     def addSkip(self, test, reason):
         super(TestResult, self).addSkip(test, reason)
         colour = self.scheme.skip
@@ -144,21 +147,38 @@ class TestResult(result.TestResult):
             self._write('skipped {0!r}'.format(reason), None, colour=colour)
         elif self.dots:
             self._write(None, 's', colour=colour)
-
+    
     def addExpectedFailure(self, test, err):
         super(TestResult, self).addExpectedFailure(test, err)
         self._write('expected failure', 'x', colour=self.scheme.expected_failure)
-
+    
     def addUnexpectedSuccess(self, test):
         super(TestResult, self).addUnexpectedSuccess(test)
         self._write('unexpected success', 'u', colour=self.scheme.unexpected_success)
-
+    
+    def startStep(self, step):
+        if self.specs and self.showAll:
+            self.stream.write('    %s ... ' % step)
+            self.stream.flush()
+    
+    def addStepSuccess(self, step):
+        if self.specs:
+            self._write('ok', None, colour=self.scheme.ok)
+    
+    def addStepError(self, step):
+        if self.specs:
+            self._write('error', None, colour=self.scheme.error)
+    
+    def addStepFailure(self, step):
+        if self.specs:
+            self._write('fail', None, colour=self.scheme.fail)
+    
     def printErrors(self):
         if self.dots or self.showAll:
             self.stream.writeln()
         self.printErrorList('ERROR', self.errors, colour=self.scheme.error)
         self.printErrorList('FAIL', self.failures, colour=self.scheme.fail)
-
+    
     def printErrorList(self, flavour, errors, colour):
         for test, err in errors:
             self.stream.writeln(self.separator1)
@@ -170,12 +190,12 @@ class TestResult(result.TestResult):
 
 class TestRunner(object):
     """A test runner class that displays results in textual form.
-
+    
     It prints out the names of tests as they are run, errors as they
     occur, and a summary of the results at the end of the test run.
     """
     resultclass = TestResult
-
+    
     def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1,
                  failfast=False, buffer=False, resultclass=None,
                  colourscheme='light', growler=growler):
@@ -188,10 +208,10 @@ class TestRunner(object):
         self.growler = growler
         if resultclass is not None:
             self.resultclass = resultclass
-
+    
     def _makeResult(self):
         return self.resultclass(self.stream, self.descriptions, self.verbosity)
-
+    
     def run(self, test):
         "Run the given test case or test suite."
         result = self._makeResult()
@@ -217,7 +237,7 @@ class TestRunner(object):
         self.stream.writeln('Ran %d test%s in %.3fs' %
                             (run, run != 1 and 's' or '', timeTaken))
         self.stream.writeln()
-
+        
         expectedFails = unexpectedSuccesses = skipped = 0
         try:
             results = map(len, (result.expectedFailures,
@@ -227,7 +247,7 @@ class TestRunner(object):
             pass
         else:
             expectedFails, unexpectedSuccesses, skipped = results
-
+        
         infos = []
         if not result.wasSuccessful():
             self.stream.write('FAILED', colour=self.scheme.FAIL)
@@ -282,10 +302,10 @@ if __name__ == '__main__':
     import sys
     if sys.argv[0].endswith('__main__.py'):
         sys.argv[0] = 'python -m autocheck.testrunner'
-
+    
     from unittest.main import main, TestProgram, USAGE_AS_MAIN
     TestProgram.USAGE = USAGE_AS_MAIN
-
+    
     main(module=None, testRunner=TestRunner)
 
 
