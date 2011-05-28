@@ -23,7 +23,7 @@ class FeatureTest(object):
         del self.result
     
     def shortDescription(self):
-        return '  Scenario: %s' % self.scenario.title
+        return 'Scenario: %s' % self.scenario.title
     
     @property
     def is_empty(self):
@@ -117,11 +117,16 @@ class Scenario(object):
         addStepSuccess = getattr(feature.result, 'addStepSuccess', None)
         addStepFailure = getattr(feature.result, 'addStepFailure', None)
         addStepError = getattr(feature.result, 'addStepError', None)
+        addStepUndefined = getattr(feature.result, 'addStepUndefined', None)
         stopStep = getattr(feature.result, 'stopStep', None)
         for step in self.steps:
             if startStep is not None:
                 startStep(step)
             if step.is_undefined:
+                if addStepUndefined is not None:
+                    addStepUndefined(step)
+                if stopStep is not None:
+                    stopStep(step)
                 feature.skipTest('pending %d step(s): %s' % (self.step_count_undefined, self.undefined_steps))
                 return
             try:

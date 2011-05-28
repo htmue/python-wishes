@@ -324,5 +324,16 @@ class FeatureTest(unittest.TestCase):
         result.wasSuccessful() |should| be(False)
         result.addStepError.call_count |should| be(1)
 
+    def test_reports_undefined_step_to_result_object(self):
+        feature = load_feature('''
+        Feature: report steps
+          Scenario: with a step
+            Given there is some undefined step
+        ''')
+        result = self.run_feature_with_result_step_handlers(feature, 'addStepUndefined')
+        len(result.skipped) |should| be(1)
+        result.wasSuccessful() |should| be(True)
+        result.addStepUndefined.call_count |should| be(1)
+
 #.............................................................................
 #   test_feature.py
