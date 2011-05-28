@@ -5,6 +5,8 @@
 #=============================================================================
 from should_dsl import should
 
+import mock
+
 from wishes.compat import unittest
 from wishes.feature import world, StepDefinition, step
 from wishes.loader import load_feature
@@ -260,7 +262,67 @@ class FeatureTest(unittest.TestCase):
         world.run |should| each_be_equal_to([
             'first', 'step', 'second', 'step',
         ])
-
+    
+    def run_feature_with_result_step_handlers(self, feature, *handlers):
+        result = unittest.TestResult()
+        for handler in ['startStep', 'stopStep'] + list(handlers):
+            setattr(result, handler, mock.Mock(handler))
+        feature.run(result)
+        result.testsRun |should| be(1)
+        result.startStep.call_count |should| be(1)
+        result.stopStep.call_count |should| be(1)
+        return result
+    
+    def test_reports_steps_to_result_object(self):
+        @step('some step')
+        def some_step(step):
+            pass
+        feature = load_feature('''
+        Feature: report steps
+          Scenario: with a step
+            Given there is some step
+        ''')
+        result = self.run_feature_with_result_step_handlers(feature)
+        result.wasSuccessful() |should| be(True)
+    
+    def test_reports_step_success_to_result_object(self):
+        @step('some step')
+        def some_step(step):
+            pass
+        feature = load_feature('''
+        Feature: report steps
+          Scenario: with a step
+            Given there is some step
+        ''')
+        result = self.run_feature_with_result_step_handlers(feature, 'addStepSuccess')
+        result.wasSuccessful() |should| be(True)
+        result.addStepSuccess.call_count |should| be(1)
+    
+    def test_reports_step_failure_to_result_object(self):
+        @step('some failing step')
+        def some_step(step):
+            1 |should| be(2)
+        feature = load_feature('''
+        Feature: report steps
+          Scenario: with a step
+            Given there is some failing step
+        ''')
+        result = self.run_feature_with_result_step_handlers(feature, 'addStepFailure')
+        result.wasSuccessful() |should| be(False)
+        result.addStepFailure.call_count |should| be(1)
+    
+    def test_reports_step_error_to_result_object(self):
+        @step('some error step')
+        def some_step(step):
+            raise Exception('hey')
+        feature = load_feature('''
+        Feature: report steps
+          Scenario: with a step
+            Given there is some error step
+        ''')
+        result = self.run_feature_with_result_step_handlers(feature, 'addStepError')
+        result.wasSuccessful() |should| be(False)
+        result.addStepError.call_count |should| be(1)
 
 #.............................................................................
 #   test_feature.py

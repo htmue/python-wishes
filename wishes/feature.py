@@ -14,6 +14,11 @@ class FeatureTest(object):
             self.skipTest('no scenarios defined')
         self.scenario.run(self)
     
+    def run(self, result=None):
+        self.result = result
+        super(FeatureTest, self).run(result)
+        del self.result
+    
     @property
     def is_empty(self):
         return self._testMethodName == 'runTest'
@@ -97,11 +102,33 @@ class Scenario(object):
             feature.skipTest('no steps defined')
         if self.background is not None:
             self.background.run(feature)
+        startStep = getattr(feature.result, 'startStep', None)
+        addStepSuccess = getattr(feature.result, 'addStepSuccess', None)
+        addStepFailure = getattr(feature.result, 'addStepFailure', None)
+        addStepError = getattr(feature.result, 'addStepError', None)
+        stopStep = getattr(feature.result, 'stopStep', None)
         for step in self.steps:
+            if startStep is not None:
+                startStep(step)
             if step.is_undefined:
                 feature.skipTest('pending %d step(s): %s' % (self.step_count_undefined, self.undefined_steps))
                 return
-            step.run()
+            try:
+                step.run()
+            except feature.failureException as failureException:
+                if addStepFailure is not None:
+                    addStepFailure(step)
+                raise failureException
+            except Exception as exception:
+                if addStepError is not None:
+                    addStepError(step)
+                raise exception
+            else:
+                if addStepSuccess is not None:
+                    addStepSuccess(step)
+            finally:
+                if stopStep is not None:
+                    stopStep(step)
     
     def add_step(self, kind, text, multilines=None, hashes=None):
         self.steps.append(Step(kind, text, multilines=multilines, hashes=hashes))
@@ -188,20 +215,20 @@ class StepDefinition(object):
         return repr(self.pattern.pattern)
     
     @classmethod
-    def add_step_definition(self, step_definition):
-        self.step_definitions.append(step_definition)
+    def add_step_definition(cls, step_definition):
+        cls.step_definitions.append(step_definition)
     
     @classmethod
-    def get_step_definitions(self, kind, text):
+    def get_step_definitions(cls, kind, text):
         s = ' '.join((kind, text))
-        for step_definition in self.step_definitions:
+        for step_definition in cls.step_definitions:
             match = step_definition.match(s)
             if match:
                 yield step_definition, match
     
     @classmethod
-    def get_step_definition(self, kind, text):
-        step_definitions = list(self.get_step_definitions(kind, text))
+    def get_step_definition(cls, kind, text):
+        step_definitions = list(cls.get_step_definitions(kind, text))
         if len(step_definitions) == 1:
             return step_definitions[0]
         elif len(step_definitions) > 1:
@@ -214,8 +241,8 @@ class StepDefinition(object):
             return None, None
     
     @classmethod
-    def clear(self):
-        self.step_definitions = []
+    def clear(cls):
+        cls.step_definitions = []
     
     def match(self, s):
         return self.pattern.search(s)
