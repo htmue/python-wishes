@@ -6,6 +6,9 @@
 import re
 import threading
 
+
+__unittest = True
+
 class FeatureTest(object):
     scenarios = dict()
     
@@ -19,6 +22,9 @@ class FeatureTest(object):
         super(FeatureTest, self).run(result)
         del self.result
     
+    def shortDescription(self):
+        return '  Scenario: %s' % self.scenario.title
+    
     @property
     def is_empty(self):
         return self._testMethodName == 'runTest'
@@ -27,10 +33,15 @@ class FeatureTest(object):
     def scenario(self):
         return self.scenarios[self._testMethodName]
     
+    @property
+    def is_scenario(self):
+        return not self.is_empty
+    
     @classmethod
     def add_scenario(cls, methodName, scenario):
         setattr(cls, methodName, cls.runTest)
         cls.scenarios[methodName] = scenario
+
 
 
 def fill_from_example(string, example):
@@ -115,14 +126,14 @@ class Scenario(object):
                 return
             try:
                 step.run()
-            except feature.failureException as failureException:
+            except feature.failureException:
                 if addStepFailure is not None:
                     addStepFailure(step)
-                raise failureException
-            except Exception as exception:
+                raise
+            except Exception:
                 if addStepError is not None:
                     addStepError(step)
-                raise exception
+                raise
             else:
                 if addStepSuccess is not None:
                     addStepSuccess(step)
@@ -171,13 +182,13 @@ class Step(object):
         self.hashes = Hashes() if hashes is None else hashes
     
     def __unicode__(self):
-        return unicode(self.text)
+        return self.decode('utf-8')
     
     def __str__(self):
-        return unicode(self).encode('utf-8')
+        return ('%s %s' % (self.kind, self.text)).encode('utf-8')
     
     def __repr__(self):
-        return '<%s %s>' % (self.kind, self)
+        return '<%s>' % self
     
     @property
     def is_defined(self):
