@@ -16,9 +16,6 @@ class DatabaseVows(unittest.TestCase):
     def setUp(self):
         self.db = Database(path=':memory:')
     
-    def tearDown(self):
-        del self.db
-    
     def test_can_connect_to_database(self):
         self.db.connect()
         self.db |should| be_connected
@@ -81,76 +78,122 @@ class DatabaseVows(unittest.TestCase):
         result = self.db.get_result(name)
         average_time = timedelta_to_float(result['average_time'])
         average_time |should| close_to(1.5, delta=.1)
-
+    
     def test_knows_last_run_of_test_run(self):
         name = 'test_name (that.SpecialTest)'
         self.add_result(name)
         self.add_result(name)
         result = self.db.get_result(name)
         result['last_run_id'] |should| equal_to(self.db.current_run_id)
-
-    def test_knows_if_last_run_was_ok(self):
-        name = 'test_name (that.SpecialTest)'
-        self.add_result(name, result='.')
-        self.db.last_run_was_ok(name) |should| be(True)
-        self.add_result(name, result='fail')
-        self.db.last_run_was_ok(name) |should| be(False)
-
+    
     def test_can_finish_test_run(self):
         name = 'test_name (that.SpecialTest)'
         self.add_result(name)
-        run = self.db.finish_run()
+        run = self.db.finish_run(True)
         run['testsRun'] |should| be(1)
-        bool(run['wasSuccessful']) |should| be(True)
+        run['wasSuccessful'] |should| be(True)
         run['errors'] |should| be(0)
         run['failures'] |should| be(0)
         run['skipped'] |should| be(0)
         run['expectedFailures'] |should| be(0)
         run['unexpectedSuccesses'] |should| be(0)
-
-    def test_knows_last_successful_run_id(self):
+    
+    def test_knows_id_of_last_successful_run(self):
         self.db.add_run()
         run = self.db.get_run()
         # prevent finish_run from cleaning history
         self.add_result('test_other_name (that.SpecialTest)', run=run)
         name = 'test_name (that.SpecialTest)'
         self.add_result(name, result='.', run=run)
-        self.db.finish_run()
+        self.db.finish_run(True)
         self.add_result(name, result='F')
-        self.db.finish_run()
+        self.db.finish_run(True)
         self.db.get_last_successful_run_id() |should| be(1)
-
+    
     def test_handles_last_successful_run_id_edge_case_empty(self):
         self.db.get_last_successful_run_id() |should| be(None)
-
+    
     def test_handles_last_successful_run_id_edge_case_only_failures(self):
         name = 'test_name (that.SpecialTest)'
         self.add_result(name, result='F')
-        self.db.finish_run()
+        self.db.finish_run(True)
         self.db.get_last_successful_run_id() |should| be(None)
-
-    def test_handles_last_successful_run_id_edge_case_cleaned(self):
-        name = 'test_name (that.SpecialTest)'
-        self.add_result(name, result='.')
-        self.db.finish_run()
-        self.add_result(name, result='F')
-        self.db.finish_run()
-        self.db.get_last_successful_run_id() |should| be(None)
-
+    
     def test_can_clean_history(self):
         name = 'test_name (that.SpecialTest)'
         self.add_result(name)
         self.add_result(name)
         self.db.clean_history()
         self.db.total_runs |should| be(1)
-
+    
     def test_cleans_history_when_finishing_run(self):
         name = 'test_name (that.SpecialTest)'
         self.add_result(name)
-        self.db.finish_run()
+        self.db.finish_run(True)
         self.add_result(name)
-        self.db.finish_run()
+        self.db.finish_run(True)
         self.db.total_runs |should| be(1)
+    
+    def test_does_not_clean_history_after_unsuccessful_run(self):
+        name = 'test_name (that.SpecialTest)'
+        self.add_result(name, result='.')
+        self.db.finish_run(True)
+        self.add_result(name, result='F')
+        self.db.finish_run(True)
+        self.db.total_runs |should| be(2)
+    
+    def test_does_not_clean_history_after_partial_run(self):
+        name = 'test_name (that.SpecialTest)'
+        self.add_result(name, result='.')
+        self.db.finish_run(True)
+        self.add_result(name, result='.')
+        self.db.finish_run(False)
+        self.db.total_runs |should| be(2)
+    
+    def test_keeps_track_of_full_test_runs(self):
+        name = 'test_name (that.SpecialTest)'
+        self.add_result(name)
+        run = self.db.finish_run(True)
+        run['full'] |should| be(True)
+    
+    def test_keeps_track_of_partial_test_runs(self):
+        name = 'test_name (that.SpecialTest)'
+        self.add_result(name)
+        run = self.db.finish_run(False)
+        run['full'] |should| be(False)
+    
+    def test_knows_id_of_last_run(self):
+        for d in range(3):
+            name = 'test_name_%d (that.SpecialTest)' % d
+            self.add_result(name)
+            run = self.db.finish_run(True)
+        self.db.get_last_run_id() |should| equal_to(run['id'])
+    
+    def test_knows_id_of_last_successful_full_run(self):
+        name = 'test_name_%d (that.SpecialTest)'
+        self.add_result(name % 1, result='.')
+        run_1 = self.db.finish_run(True)
+        self.add_result(name % 2, result='.')
+        run_2 = self.db.finish_run(False)
+        self.add_result(name % 3, result='F')
+        run_3 = self.db.finish_run(True)
+        self.db.get_last_successful_full_run_id() |should| equal_to(run_1['id'])
+    
+    def test_can_collect_tests_with_certain_result_after_certain_run(self):
+        name = 'test_name_%d (that.SpecialTest)'
+        run_ids = []
+        for i, result in enumerate('.FExFus'):
+            self.add_result(name % i, result=result)
+            run_ids.append(self.db.finish_run(True)['id'])
+        
+        results = list(self.db.collect_results_after(run_ids[0], 'F'))
+        results |should| equal_to(['test_name_1 (that.SpecialTest)', 'test_name_4 (that.SpecialTest)'])
+        
+        results = list(self.db.collect_results_after(run_ids[2], 'F'))
+        results |should| equal_to(['test_name_4 (that.SpecialTest)'])
+        
+        results = list(self.db.collect_results_after(run_ids[4], 'F'))
+        results |should| be_empty
 
 #.............................................................................
 #   test_db.py

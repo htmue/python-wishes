@@ -19,6 +19,7 @@ class Database(object):
             finished TIMESTAMP,
             wasSuccessful BOOLEAN,
             testsRun INTEGER,
+            full BOOLEAN,
             errors INTEGER,
             failures INTEGER,
             skipped INTEGER,
@@ -51,11 +52,11 @@ class Database(object):
         else:
             self.path = path
         self.connection = None
-
+    
     def connect(self):
         self.connection = sqlite3.connect(self.path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         self.connection.row_factory = sqlite3.Row
-
+    
     def _setup(self):
         with self.transaction() as cursor:
             cursor.execute('PRAGMA foreign_keys = ON')
@@ -72,12 +73,12 @@ class Database(object):
     @property
     def is_connected(self):
         return self.connection is not None
-
+    
     def ensure_connection(self):
         if not self.is_connected:
             self.connect()
             self._setup()
-
+    
     @contextmanager
     def transaction(self):
         self.ensure_connection()
@@ -88,7 +89,7 @@ class Database(object):
             raise
         else:
             self.connection.commit()
-
+    
     def add_run(self):
         with self.transaction() as cursor:
             cursor.execute('INSERT INTO run(started) VALUES (?)', [datetime.datetime.utcnow()])
@@ -145,22 +146,19 @@ class Database(object):
     
     def total_runs_by_test_name(self, name):
         return self.get_result(name)['runs']
-
-    def last_run_was_ok(self, name):
-        return self.get_result(name)['result'] == '.'
-
+    
     def _get_result_count(self, cursor, run_id, result=None):
         if result is None:
             cursor.execute('SELECT count(*) FROM result WHERE last_run_id=?', [run_id])
         else:
             cursor.execute('SELECT count(*) FROM result WHERE result=? AND last_run_id=?', (result, run_id))
         return cursor.fetchone()[0]
-
+    
     def _get_result_counts(self, cursor, run_id):
         for result, key in self.RESULTS.items():
             yield result, self._get_result_count(cursor, run_id, key)
-
-    def finish_run(self):
+    
+    def finish_run(self, full):
         with self.transaction() as cursor:
             run_id = self.current_run_id
             data = dict(self._get_result_counts(cursor, run_id))
@@ -169,33 +167,52 @@ class Database(object):
                 finished = datetime.datetime.utcnow(),
                 wasSuccessful = data['errors'] == data['failures'] == 0,
                 testsRun = self._get_result_count(cursor, run_id),
+                full = full,
             )
             cursor.execute('''UPDATE run SET
                 finished=:finished,
                 wasSuccessful=:wasSuccessful,
                 testsRun=:testsRun,
+                full=:full,
                 errors=:errors,
                 failures=:failures,
                 skipped=:skipped,
                 expectedFailures=:expectedFailures,
                 unexpectedSuccesses=:unexpectedSuccesses WHERE id=:run_id''', data)
             run = self._get_run(cursor, run_id)
-            self._clean_history(cursor)
+            if full and run['wasSuccessful']:
+                self._clean_history(cursor)
         return run
-
-    def get_last_successful_run_id(self):
+    
+    def get_last_run_id(self, where=''):
         with self.transaction() as cursor:
-            cursor.execute('SELECT id FROM run WHERE wasSuccessful=1 ORDER BY finished DESC LIMIT 1')
+            cursor.execute('SELECT id FROM run %s ORDER BY finished DESC LIMIT 1' % where)
             run_id = cursor.fetchone()
         if run_id is not None:
             return run_id[0]
-
+    
+    def get_last_successful_run_id(self):
+        return self.get_last_run_id('WHERE wasSuccessful=1')
+    
+    def get_last_successful_full_run_id(self):
+        return self.get_last_run_id('WHERE wasSuccessful=1 AND full=1')
+    
+    def collect_results_after(self, run_id, result):
+        with self.transaction() as cursor:
+            cursor.execute('''SELECT name FROM result WHERE last_run_id IN (
+                SELECT id FROM run WHERE started>(
+                    SELECT started FROM run WHERE id=?
+                )) AND result=?''', (run_id, result))
+            for row in cursor.fetchall():
+                yield row[0]
+    
     def clean_history(self):
         with self.transaction() as cursor:
             self._clean_history(cursor)
     
     def _clean_history(self, cursor):
         cursor.execute('DELETE FROM run WHERE (SELECT count(*) FROM result WHERE last_run_id=run.id)=0')
+
 
 def timedelta_to_float(delta):
     if hasattr(delta, 'total_seconds'):
@@ -211,6 +228,11 @@ def convert_timedelta(s):
 
 sqlite3.register_adapter(datetime.timedelta, adapt_timedelta)
 sqlite3.register_converter('timedelta', convert_timedelta)
+
+def convert_boolean(s):
+    return bool(int(s))
+
+sqlite3.register_converter('boolean', convert_boolean)
 
 #.............................................................................
 #   db.py
