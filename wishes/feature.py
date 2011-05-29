@@ -20,7 +20,6 @@ class FeatureTest(object):
     def run(self, result=None):
         self.result = result
         super(FeatureTest, self).run(result)
-        del self.result
     
     def shortDescription(self):
         return 'Scenario: %s' % self.scenario.title
