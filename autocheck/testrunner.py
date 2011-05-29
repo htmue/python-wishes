@@ -145,7 +145,7 @@ class TestResult(unittest.TestResult):
         colour = self.scheme.skip
         if self.showAll:
             self._write_scenario_result_indent(test)
-            self._write('{} {0!r}'.format(status.skip.name, reason), None, colour=colour)
+            self._write('{0} {1!r}'.format(status.skip.name, reason), None, colour=colour)
         elif self.dots:
             self._write(None, status.skip.key, colour=colour)
     
