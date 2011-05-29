@@ -1,9 +1,14 @@
 # -*- coding:utf-8 -*-
-# Created by Hans-Thomas on 2011-05-12.
+# Created by Hans-Thomas on 2011-05-29.
 #=============================================================================
-#   __init__.py --- Autocheck vows
+#   compat.py --- Compatibility for Python 2.6
 #=============================================================================
-import extra_matchers
+
+import sys
+if sys.version_info[:2] < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 #.............................................................................
-#   __init__.py
+#   compat.py

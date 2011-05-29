@@ -8,27 +8,24 @@ import logging
 import os
 import signal
 import sys
-try:
-    from unittest.main import TestProgram
-except ImportError:
-    from unittest2.main import TestProgram
 
 from autorunner import AutocheckObserver
-from testrunner import TestRunner
+from db import Database
+from testrunner import TestRunner, TestProgram
 
 
 log = logging.getLogger('autocheck')
 
 
 class Unbuffered:
-
+    
     def __init__(self, stream):
         self.stream = stream
-
+    
     def write(self, data):
         self.stream.write(data)
         self.stream.flush()
-
+    
     def __getattr__(self, attr):
         return getattr(self.stream, attr)
 
@@ -39,20 +36,19 @@ def handle_term():
 
 def single(args):
     sys.stdout=Unbuffered(sys.stdout)
-    if '--wishes' in args:
-        raise NotImplementedError('wishes runner')
-    else:
-        TestProgram(module=None, testRunner=TestRunner, argv=args)
+    TestProgram(module=None, testRunner=TestRunner, argv=args, database=Database())
 
 def autocheck(args):
     handle_term()
     root = AutocheckObserver('.', args)
     log.debug('starting autocheck observer')
-    try:
-        root.loop()
-    except KeyboardInterrupt:
-        print 'Got signal, exiting.'
-        root.kill_child()
+    while True:
+        try:
+            root.loop()
+        except KeyboardInterrupt:
+            if not root.kill_child():
+                print >> sys.stderr, 'Got signal, exiting.'
+                break
 
 def main(args=sys.argv):
     if '--single' in args:
@@ -66,7 +62,7 @@ def main(args=sys.argv):
 if __name__ == '__main__':
     if sys.argv[0].endswith('main.py'):
         sys.argv[0:1] = [os.path.abspath(sys.executable), '-m', 'autocheck.main']
-
+    
     main()
 
 #.............................................................................

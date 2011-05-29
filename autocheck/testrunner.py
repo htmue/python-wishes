@@ -3,18 +3,14 @@
 #=============================================================================
 #   testrunner.py --- Running tests
 #=============================================================================
-import os
+import datetime
 import sys
 import time
-try:
-    from unittest import result
-    from unittest.signals import registerResult
-except ImportError:
-    from unittest2 import result
-    from unittest2.signals import registerResult
-from contextlib import contextmanager
-import termstyle
-import yaml
+
+import status
+from colorizer import ColourWritelnDecorator, ColourScheme
+from compat import unittest
+from filtersuite import FilterLoader, FilterSuite
 
 
 try:
@@ -24,66 +20,6 @@ except ImportError:
 else:
     growler = Notifier()
 
-
-
-class ColourDecorator(object):
-    """Used to decorate file-like objects' 'write' method to accept colours"""
-    def __init__(self, stream):
-        self.stream = stream
-    
-    def __getattr__(self, attr):
-        if attr in ('stream', '__getstate__'):
-            raise AttributeError(attr)
-        return getattr(self.stream, attr)
-    
-    def write(self, arg=None, colour=None):
-        if arg:
-            if colour is not None:
-                arg = colour(arg)
-        self.stream.write(arg)
-
-
-class ColourWritelnDecorator(ColourDecorator):
-    """Used to decorate file-like objects with a handy 'writeln' method"""
-    def __init__(self, stream):
-        self.stream = stream
-    
-    def __getattr__(self, attr):
-        if attr in ('stream', '__getstate__'):
-            raise AttributeError(attr)
-        return getattr(self.stream, attr)
-    
-    def writeln(self, arg=None, colour=None):
-        if arg:
-            self.write(arg, colour=colour)
-        self.write('\n') # text-mode streams translate to \r\n if needed
-
-
-class ColourScheme(object):
-    
-    def __init__(self, scheme):
-        if isinstance(scheme, basestring):
-            filename = os.path.join(os.path.dirname(__file__), 'colourschemes', scheme + '.yaml')
-            self.scheme = yaml.load(open(filename))
-        else:
-            self.scheme = scheme
-    
-    def __getattr__(self, key):
-        if self.scheme is not None:
-            colour = self.scheme.get(key)
-            if isinstance(colour, basestring):
-                return getattr(termstyle, colour)
-            elif colour is None:
-                return lambda x: x
-            else:
-                return compose(getattr(termstyle, c) for c in colour)
-
-def compose(iterable):
-    def compose(arg):
-        for f in iterable:
-            arg = f(arg)
-        return arg
-    return compose
 
 def camel_to_underscore(value):
     def camel_to_underscore():
@@ -96,7 +32,7 @@ def camel_to_underscore(value):
                 yield c
     return ''.join(camel_to_underscore())
 
-class TestResult(result.TestResult):
+class TestResult(unittest.TestResult):
     """A test result class that can print formatted text results to a stream.
     
     Used by TestRunner.
@@ -104,7 +40,8 @@ class TestResult(result.TestResult):
     separator1 = '=' * 70
     separator2 = '-' * 70
     
-    def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1, colourscheme='light'):
+    def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1,
+            colourscheme='light', database=None, now_function=None):
         super(TestResult, self).__init__()
         self.scheme = colourscheme if isinstance(colourscheme, ColourScheme) else ColourScheme(colourscheme)
         self.stream = stream if isinstance(stream, ColourWritelnDecorator) else ColourWritelnDecorator(stream)
@@ -114,6 +51,8 @@ class TestResult(result.TestResult):
         self.descriptions = descriptions
         self.success_count = 0
         self.current_class = None
+        self.database = database
+        self.now = datetime.datetime.utcnow if now_function is None else now_function
     
     def getSpecDescription(self, test):
         if self.specs:
@@ -157,6 +96,9 @@ class TestResult(result.TestResult):
             self.stream.write(dots, colour=colour)
             self.stream.flush()
     
+    def _write_status(self, status):
+        self._write(status.name, status.key, getattr(self.scheme, status.colour))
+    
     def _write_scenario_result_indent(self, test):
         if self.specs and getattr(test, 'is_scenario', False):
             self.stream.write('  ... ')
@@ -169,43 +111,57 @@ class TestResult(result.TestResult):
             if self.specs and getattr(test, 'is_scenario', False):
                 self.stream.writeln()
             self.stream.flush()
+        self.time_started = self.now()
+    
+    def _add_result(self, test, status):
+        if self.database is not None:
+            name = str(test)
+            if not name.endswith('(unittest.loader.ModuleImportFailure)'):
+                finished = self.now()
+                self.database.add_result(name, self.time_started, finished, status)
     
     def addSuccess(self, test):
         super(TestResult, self).addSuccess(test)
+        self._add_result(test, status.ok.key)
         self.success_count += 1
         self._write_scenario_result_indent(test)
-        self._write('ok', '.', colour=self.scheme.ok)
+        self._write_status(status.ok)
     
     def addError(self, test, err):
         super(TestResult, self).addError(test, err)
+        self._add_result(test, status.error.key)
         self._write_scenario_result_indent(test)
-        self._write('ERROR', 'E', colour=self.scheme.error)
+        self._write_status(status.error)
     
     def addFailure(self, test, err):
         super(TestResult, self).addFailure(test, err)
+        self._add_result(test, status.fail.key)
         self._write_scenario_result_indent(test)
-        self._write('FAIL', 'F', colour=self.scheme.fail)
+        self._write_status(status.fail)
     
     def addSkip(self, test, reason):
         super(TestResult, self).addSkip(test, reason)
+        self._add_result(test, status.skip.key)
         colour = self.scheme.skip
         if self.showAll:
             self._write_scenario_result_indent(test)
-            self._write('skipped {0!r}'.format(reason), None, colour=colour)
+            self._write('{} {0!r}'.format(status.skip.name, reason), None, colour=colour)
         elif self.dots:
-            self._write(None, 's', colour=colour)
+            self._write(None, status.skip.key, colour=colour)
     
     def addExpectedFailure(self, test, err):
         super(TestResult, self).addExpectedFailure(test, err)
+        self._add_result(test, status.expected_failure.key)
         if self.showAll:
             self._write_scenario_result_indent(test)
-        self._write('expected failure', 'x', colour=self.scheme.expected_failure)
+        self._write_status(status.expected_failure)
     
     def addUnexpectedSuccess(self, test):
         super(TestResult, self).addUnexpectedSuccess(test)
+        self._add_result(test, status.unexpected_success.key)
         if self.showAll:
             self._write_scenario_result_indent(test)
-        self._write('unexpected success', 'u', colour=self.scheme.unexpected_success)
+        self._write_status(status.unexpected_success)
     
     def startStep(self, step):
         if self.specs and self.showAll:
@@ -254,10 +210,12 @@ class TestRunner(object):
     occur, and a summary of the results at the end of the test run.
     """
     resultclass = TestResult
+    database = None
     
     def __init__(self, stream=sys.stderr, descriptions=True, verbosity=1,
                  failfast=False, buffer=False, resultclass=None,
-                 colourscheme='light', growler=growler):
+                 colourscheme='light', growler=growler, database=None,
+                 full_suite=True, now_function=None):
         self.stream = ColourWritelnDecorator(stream)
         self.scheme = ColourScheme(colourscheme)
         self.descriptions = descriptions
@@ -267,16 +225,22 @@ class TestRunner(object):
         self.growler = growler
         if resultclass is not None:
             self.resultclass = resultclass
+        if database is not None:
+            self.database = database
+        self.full_suite = full_suite
+        self.now = datetime.datetime.utcnow if now_function is None else now_function
     
     def _makeResult(self):
-        return self.resultclass(self.stream, self.descriptions, self.verbosity)
+        return self.resultclass(self.stream, self.descriptions, self.verbosity, self.scheme, self.database, self.now)
     
     def run(self, test):
         "Run the given test case or test suite."
         result = self._makeResult()
-        registerResult(result)
+        unittest.registerResult(result)
         result.failfast = self.failfast
         result.buffer = self.buffer
+        if self.database is not None:
+            self.database.add_run()
         startTime = time.time()
         startTestRun = getattr(result, 'startTestRun', None)
         if startTestRun is not None:
@@ -288,6 +252,8 @@ class TestRunner(object):
             if stopTestRun is not None:
                 stopTestRun()
         stopTime = time.time()
+        if self.database is not None:
+            self.database.finish_run(self.full_suite)
         timeTaken = stopTime - startTime
         result.printErrors()
         if hasattr(result, 'separator2'):
@@ -356,13 +322,39 @@ class TestRunner(object):
         return result
 
 
+class TestProgram(unittest.TestProgram):
+    
+    def __init__(self, module='__main__', defaultTest=None, argv=None,
+                    testRunner=None, testLoader=FilterLoader,
+                    exit=True, verbosity=1, failfast=None, catchbreak=None,
+                    buffer=None, database=None):
+        self.database = database
+        self.full_suite = testLoader.set_database(database)
+        super(TestProgram, self).__init__(module=module, defaultTest=defaultTest,
+            argv=argv, testRunner=testRunner, testLoader=testLoader, exit=exit,
+            verbosity=verbosity, failfast=failfast, catchbreak=catchbreak,
+            buffer=buffer)
+    
+    def _do_discovery(self, argv):
+        super(TestProgram, self)._do_discovery(argv, Loader=self.testLoader)
+    
+    def runTests(self):
+        if self.catchbreak:
+            unittest.installHandler()
+        testRunner = self.testRunner(verbosity=self.verbosity,
+            failfast=self.failfast, buffer=self.buffer,
+            database=self.database, full_suite=self.full_suite)
+        self.result = testRunner.run(self.test)
+        if self.exit:
+            sys.exit(not self.result.wasSuccessful())
+
 
 if __name__ == '__main__':
     import sys
     if sys.argv[0].endswith('__main__.py'):
         sys.argv[0] = 'python -m autocheck.testrunner'
     
-    from unittest.main import main, TestProgram, USAGE_AS_MAIN
+    from unittest.main import USAGE_AS_MAIN
     TestProgram.USAGE = USAGE_AS_MAIN
     
     main(module=None, testRunner=TestRunner)

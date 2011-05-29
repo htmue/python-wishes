@@ -8,6 +8,9 @@ import os
 import sqlite3
 from contextlib import contextmanager
 
+from status import Status, ok
+
+
 class DatabaseError(Exception):
     pass
 
@@ -35,14 +38,6 @@ class Database(object):
             last_run_id INTEGER REFERENCES run(id),
             result VARCHAR
         )''',
-    )
-    RESULTS = dict(
-        ok='.',
-        errors='E',
-        failures='F',
-        skipped='s',
-        expectedFailures='x',
-        unexpectedSuccesses='u'
     )
     
     def __init__(self, path=None, basedir=None, name='.tests.db'):
@@ -127,7 +122,7 @@ class Database(object):
         name = result_row['name']
         runs = result_row['runs'] + 1
         average_time = result_row['average_time']
-        if result == '.':
+        if result == ok.key:
             total_time = average_time * (runs - 1) + (finished - started)
             average_time = total_time / runs
         cursor.execute('UPDATE result SET last_run_id=?,runs=?,started=?,finished=?,average_time=?,result=? WHERE name=?',
@@ -155,8 +150,9 @@ class Database(object):
         return cursor.fetchone()[0]
     
     def _get_result_counts(self, cursor, run_id):
-        for result, key in self.RESULTS.items():
-            yield result, self._get_result_count(cursor, run_id, key)
+        for status in Status.ordered:
+            if status.name != ok.name:
+                yield status.name_plural, self._get_result_count(cursor, run_id, status.key)
     
     def finish_run(self, full):
         with self.transaction() as cursor:
@@ -197,12 +193,12 @@ class Database(object):
     def get_last_successful_full_run_id(self):
         return self.get_last_run_id('WHERE wasSuccessful=1 AND full=1')
     
-    def collect_results_after(self, run_id, result):
+    def collect_results_after(self, run_id, result=ok.key, exclude=True):
         with self.transaction() as cursor:
             cursor.execute('''SELECT name FROM result WHERE last_run_id IN (
                 SELECT id FROM run WHERE started>(
                     SELECT started FROM run WHERE id=?
-                )) AND result=?''', (run_id, result))
+                )) AND result%s?''' % ('=', '!=')[bool(exclude)], (run_id, result))
             for row in cursor.fetchall():
                 yield row[0]
     

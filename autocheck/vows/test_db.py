@@ -7,8 +7,9 @@ import datetime
 
 from should_dsl import should, should_not
 
+from autocheck.compat import unittest
 from autocheck.db import Database, timedelta_to_float
-from wishes.compat import unittest
+from autocheck.status import ok, error, fail, skip
 
 
 class DatabaseVows(unittest.TestCase):
@@ -52,7 +53,7 @@ class DatabaseVows(unittest.TestCase):
         run['started'] |should| be_greater_than(before)
         run['started'] |should| be_less_than(after)
     
-    def add_result(self, name, result='.', started=None, finished=None, run=None):
+    def add_result(self, name, result=ok.key, started=None, finished=None, run=None):
         if run is None:
             self.db.add_run()
             run = self.db.get_run()
@@ -98,7 +99,7 @@ class DatabaseVows(unittest.TestCase):
         
         result = self.db.get_result(name)
         
-        result['last_run_id'] |should| equal_to(self.db.current_run_id)
+        result['last_run_id'] |should| be_equal_to(self.db.current_run_id)
     
     def test_can_finish_test_run(self):
         name = 'test_name (that.SpecialTest)'
@@ -120,9 +121,9 @@ class DatabaseVows(unittest.TestCase):
         # prevent finish_run from cleaning history
         self.add_result('test_other_name (that.SpecialTest)', run=run)
         name = 'test_name (that.SpecialTest)'
-        self.add_result(name, result='.', run=run)
+        self.add_result(name, result=ok.key, run=run)
         self.db.finish_run(True)
-        self.add_result(name, result='F')
+        self.add_result(name, result=fail.key)
         self.db.finish_run(True)
         
         self.db.get_last_successful_run_id() |should| be(1)
@@ -132,7 +133,7 @@ class DatabaseVows(unittest.TestCase):
     
     def test_handles_last_successful_run_id_edge_case_only_failures(self):
         name = 'test_name (that.SpecialTest)'
-        self.add_result(name, result='F')
+        self.add_result(name, result=fail.key)
         self.db.finish_run(True)
         
         self.db.get_last_successful_run_id() |should| be(None)
@@ -157,18 +158,18 @@ class DatabaseVows(unittest.TestCase):
     
     def test_does_not_clean_history_after_unsuccessful_run(self):
         name = 'test_name (that.SpecialTest)'
-        self.add_result(name, result='.')
+        self.add_result(name, result=ok.key)
         self.db.finish_run(True)
-        self.add_result(name, result='F')
+        self.add_result(name, result=fail.key)
         self.db.finish_run(True)
         
         self.db.total_runs |should| be(2)
     
     def test_does_not_clean_history_after_partial_run(self):
         name = 'test_name (that.SpecialTest)'
-        self.add_result(name, result='.')
+        self.add_result(name, result=ok.key)
         self.db.finish_run(True)
-        self.add_result(name, result='.')
+        self.add_result(name, result=ok.key)
         self.db.finish_run(False)
         
         self.db.total_runs |should| be(2)
@@ -193,33 +194,39 @@ class DatabaseVows(unittest.TestCase):
             self.add_result(name)
             run = self.db.finish_run(True)
         
-        self.db.get_last_run_id() |should| equal_to(run['id'])
+        self.db.get_last_run_id() |should| be_equal_to(run['id'])
     
     def test_knows_id_of_last_successful_full_run(self):
         name = 'test_name_%d (that.SpecialTest)'
-        self.add_result(name % 1, result='.')
+        self.add_result(name % 1, result=ok.key)
         run_1 = self.db.finish_run(True)
-        self.add_result(name % 2, result='.')
+        self.add_result(name % 2, result=ok.key)
         run_2 = self.db.finish_run(False)
-        self.add_result(name % 3, result='F')
+        self.add_result(name % 3, result=fail.key)
         run_3 = self.db.finish_run(True)
         
-        self.db.get_last_successful_full_run_id() |should| equal_to(run_1['id'])
+        self.db.get_last_successful_full_run_id() |should| be_equal_to(run_1['id'])
     
-    def test_can_collect_tests_with_certain_result_after_certain_run(self):
-        name = 'test_name_%d (that.SpecialTest)'
+    def test_can_collect_non_successful_tests_after_certain_run(self):
+        name = 'test_name_%d_%s (that.SpecialTest)'
         run_ids = []
-        for i, result in enumerate('.FExFus'):
-            self.add_result(name % i, result=result)
+        for i, status in enumerate((ok, fail, error, ok, skip)):
+            self.add_result(name % (i, status.name), result=status.key)
             run_ids.append(self.db.finish_run(True)['id'])
         
-        results = list(self.db.collect_results_after(run_ids[0], 'F'))
-        results |should| equal_to(['test_name_1 (that.SpecialTest)', 'test_name_4 (that.SpecialTest)'])
+        results = list(self.db.collect_results_after(run_ids[0]))
+        results |should| each_be_equal_to([
+            'test_name_1_FAIL (that.SpecialTest)',
+            'test_name_2_ERROR (that.SpecialTest)',
+            'test_name_4_skipped (that.SpecialTest)',
+        ])
         
-        results = list(self.db.collect_results_after(run_ids[2], 'F'))
-        results |should| equal_to(['test_name_4 (that.SpecialTest)'])
+        results = list(self.db.collect_results_after(run_ids[2]))
+        results |should| each_be_equal_to([
+            'test_name_4_skipped (that.SpecialTest)',
+        ])
         
-        results = list(self.db.collect_results_after(run_ids[4], 'F'))
+        results = list(self.db.collect_results_after(run_ids[4]))
         results |should| be_empty
 
 #.............................................................................

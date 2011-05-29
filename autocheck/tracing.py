@@ -9,6 +9,7 @@ import types
 
 
 trace = logging.getLogger(__name__)
+trace.debug('enabled')
 
 
 def tracing(f, name, log=trace.debug):
@@ -21,7 +22,7 @@ def tracing(f, name, log=trace.debug):
     return traced_f
 
 class MetaTracer(type):
-
+    
     def __new__(self, classname, bases, classdict):
         log = logging.getLogger('%s.%s' % (classdict['__module__'], classname))
         classdict.setdefault('log', log)
