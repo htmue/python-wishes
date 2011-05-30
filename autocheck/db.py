@@ -16,10 +16,11 @@ class DatabaseError(Exception): pass
 class DoesNotExist(DatabaseError): pass
 class RunDoesNotExist(DoesNotExist): pass
 class ResultDoesNotExist(DoesNotExist): pass
+class TestDoesNotExist(DoesNotExist): pass
 
 class Database(object):
     _TABLES = dict(
-    
+        
         run = '''run(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             started TIMESTAMP,
@@ -32,17 +33,22 @@ class Database(object):
             skipped INTEGER,
             expectedFailures INTEGER,
             unexpectedSuccesses INTEGER
-            )''',
-    
-        result = '''result(
+        )''',
+        
+        test = '''test(
             name VARCHAR PRIMARY KEY,
             runs INTEGER,
+            average_time TIMEDELTA
+        )''',
+        
+        result = '''result(
+            name VARCHAR REFERENCES test(name),
             started TIMESTAMP,
             finished TIMESTAMP,
-            average_time TIMEDELTA,
-            last_run_id INTEGER REFERENCES run(id),
+            run_id INTEGER REFERENCES run(id),
             status VARCHAR
         )''',
+    
     )
     
     def __init__(self, path=None, basedir=None, name='.tests.db'):
@@ -128,45 +134,57 @@ class Database(object):
         return run
     
     @with_cursor
-    def add_result(self, cursor, name, started, finished, status):
-        try:
-            result = self.get_result(name, cursor=cursor)
-        except ResultDoesNotExist:
-            self._insert_result(cursor, name, started, finished, status)
-        else:
-            self._update_result(cursor, result, started, finished, status)
-    
-    def _insert_result(self, cursor, name, started, finished, status):
-        cursor.execute('INSERT INTO result(last_run_id,name,runs,started,finished,average_time,status) VALUES (?,?,?,?,?,?,?)',
-            (self.current_run_id, name, 1, started, finished, finished - started, status))
-    
-    def _update_result(self, cursor, result, started, finished, status):
-        name = result['name']
-        runs = result['runs'] + 1
-        average_time = result['average_time']
-        if status == ok.key:
-            total_time = average_time * (runs - 1) + (finished - started)
-            average_time = total_time / runs
-        cursor.execute('UPDATE result SET last_run_id=?,runs=?,started=?,finished=?,average_time=?,status=? WHERE name=?',
-            (self.current_run_id, runs, started, finished, average_time, status, name))
+    def get_test(self, cursor, name):
+        cursor.execute('SELECT * FROM test WHERE name=?', (name,))
+        test = cursor.fetchone()
+        if test is None:
+            raise TestDoesNotExist(name)
+        return test
     
     @with_cursor
-    def get_result(self, cursor, name):
-        cursor.execute('SELECT * FROM result WHERE name = ?', [name])
-        row = cursor.fetchone()
-        if row is None:
-            raise ResultDoesNotExist(name)
-        return row
+    def get_or_create_test(self, cursor, name):
+        try:
+            test = self.get_test(name, cursor=cursor)
+        except TestDoesNotExist:
+            cursor.execute('INSERT INTO test(name,runs,average_time) VALUES (?,?,?)',
+                (name,0,None))
+            test = self.get_test(name, cursor=cursor)
+        return test
     
-    def total_runs_by_test_name(self, name):
-        return self.get_result(name)['runs']
+    @with_cursor
+    def add_result(self, cursor, name, started, finished, status):
+        test = self.get_or_create_test(name, cursor=cursor)
+        cursor.execute('INSERT INTO result(run_id,name,started,finished,status) VALUES (?,?,?,?,?)',
+            (self.current_run_id, name, started, finished, status))
+        runs = test['runs'] + 1
+        average_time = test['average_time']
+        if status == ok.key:
+            if average_time is None:
+                average_time = finished - started
+            else:
+                total_time = average_time * (runs - 1) + (finished - started)
+                average_time = total_time / runs
+        cursor.execute('UPDATE test SET runs=?,average_time=? WHERE name=?',
+            (runs, average_time, name))
+    
+    @with_cursor
+    def get_last_result(self, cursor, name):
+        cursor.execute('SELECT * FROM result WHERE name=? ORDER BY finished DESC LIMIT 1', (name,))
+        result = cursor.fetchone()
+        if result is None:
+            raise ResultDoesNotExist(name)
+        return result
+    
+    @with_cursor
+    def total_runs_by_test_name(self, cursor, name):
+        return self.get_test(name, cursor=cursor)['runs']
     
     @with_cursor
     def get_result_count(self, cursor, run_id, status=None):
         if status is None:
-            cursor.execute('SELECT count(*) FROM result WHERE last_run_id=?', [run_id])
+            cursor.execute('SELECT count(*) FROM result WHERE run_id=?', [run_id])
         else:
-            cursor.execute('SELECT count(*) FROM result WHERE status=? AND last_run_id=?', (status, run_id))
+            cursor.execute('SELECT count(*) FROM result WHERE status=? AND run_id=?', (status, run_id))
         return cursor.fetchone()[0]
     
     @with_cursor
@@ -175,57 +193,60 @@ class Database(object):
             if status.name != ok.name:
                 yield status.name_plural, self.get_result_count(run_id, status.key, cursor=cursor)
     
-    def finish_run(self, full):
-        with self.transaction() as cursor:
-            run_id = self.current_run_id
-            data = dict(self.get_result_counts(run_id, cursor=cursor))
-            data.update(
-                run_id = run_id,
-                finished = datetime.datetime.utcnow(),
-                wasSuccessful = data['errors'] == data['failures'] == 0,
-                testsRun = self.get_result_count(run_id, cursor=cursor),
-                full = full,
-            )
-            cursor.execute('''UPDATE run SET
-                finished=:finished,
-                wasSuccessful=:wasSuccessful,
-                testsRun=:testsRun,
-                full=:full,
-                errors=:errors,
-                failures=:failures,
-                skipped=:skipped,
-                expectedFailures=:expectedFailures,
-                unexpectedSuccesses=:unexpectedSuccesses WHERE id=:run_id''', data)
-            run = self.get_run(run_id, cursor=cursor)
-            if full and run['wasSuccessful']:
-                self.clean_history(cursor=cursor)
+    @with_cursor
+    def finish_run(self, cursor, full):
+        run_id = self.current_run_id
+        data = dict(self.get_result_counts(run_id, cursor=cursor))
+        data.update(
+            run_id = run_id,
+            finished = datetime.datetime.utcnow(),
+            wasSuccessful = data['errors'] == data['failures'] == 0,
+            testsRun = self.get_result_count(run_id, cursor=cursor),
+            full = full,
+        )
+        cursor.execute('''UPDATE run SET
+            finished=:finished,
+            wasSuccessful=:wasSuccessful,
+            testsRun=:testsRun,
+            full=:full,
+            errors=:errors,
+            failures=:failures,
+            skipped=:skipped,
+            expectedFailures=:expectedFailures,
+            unexpectedSuccesses=:unexpectedSuccesses WHERE id=:run_id''', data)
+        run = self.get_run(run_id, cursor=cursor)
+        self.clean_history(cursor=cursor)
         return run
     
-    def get_last_run_id(self, where=''):
-        with self.transaction() as cursor:
-            cursor.execute('SELECT id FROM run %s ORDER BY finished DESC LIMIT 1' % where)
-            run_id = cursor.fetchone()
+    @with_cursor
+    def get_last_run_id(self, cursor, where=''):
+        cursor.execute('SELECT id FROM run %s ORDER BY finished DESC LIMIT 1' % where)
+        run_id = cursor.fetchone()
         if run_id is not None:
             return run_id[0]
     
-    def get_last_successful_run_id(self):
-        return self.get_last_run_id('WHERE wasSuccessful=1')
+    @with_cursor
+    def get_last_successful_run_id(self, cursor):
+        return self.get_last_run_id('WHERE wasSuccessful=1', cursor=cursor)
     
-    def get_last_successful_full_run_id(self):
-        return self.get_last_run_id('WHERE wasSuccessful=1 AND full=1')
+    @with_cursor
+    def get_last_successful_full_run_id(self, cursor):
+        return self.get_last_run_id('WHERE wasSuccessful=1 AND full=1', cursor=cursor)
     
-    def collect_results_after(self, run_id, status=ok.key, exclude=True):
-        with self.transaction() as cursor:
-            cursor.execute('''SELECT name FROM result WHERE last_run_id IN (
-                SELECT id FROM run WHERE started>(
-                    SELECT started FROM run WHERE id=?
-                )) AND status%s?''' % ('=', '!=')[bool(exclude)], (run_id, status))
-            for row in cursor.fetchall():
-                yield row[0]
+    @with_cursor
+    def collect_results_after(self, cursor, run_id, status=ok.key, exclude=True):
+        cursor.execute('''SELECT DISTINCT name FROM result WHERE run_id IN (
+            SELECT id FROM run WHERE started>(
+                SELECT started FROM run WHERE id=?
+            )) AND status%s?''' % ('=', '!=')[bool(exclude)], (run_id, status))
+        for row in cursor.fetchall():
+            yield row[0]
     
     @with_cursor
     def clean_history(self, cursor):
-        cursor.execute('DELETE FROM run WHERE (SELECT count(*) FROM result WHERE last_run_id=run.id)=0')
+        run_id = self.get_last_successful_full_run_id(cursor=cursor)
+        cursor.execute('DELETE FROM result WHERE finished<(SELECT started FROM run WHERE id=?)', (run_id,))
+        cursor.execute('DELETE FROM run WHERE (SELECT count(*) FROM result WHERE run_id=run.id)=0')
 
 
 def timedelta_to_float(delta):

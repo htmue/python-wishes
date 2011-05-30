@@ -80,7 +80,7 @@ class DatabaseVows(unittest.TestCase):
         self.db.total_runs_by_test_name(name) |should| be(1)
     
     def test_raises_ResultDoesNotExist_when_test_does_not_exist(self):
-        get_result = partial(self.db.get_result, 'hi')
+        get_result = partial(self.db.get_last_result, 'hi')
         
         get_result |should| throw(ResultDoesNotExist)
     
@@ -101,9 +101,9 @@ class DatabaseVows(unittest.TestCase):
         finished = started + datetime.timedelta(seconds=2)
         self.add_result(name, started=started, finished=finished)
         
-        result = self.db.get_result(name)
+        test = self.db.get_test(name)
         
-        average_time = timedelta_to_float(result['average_time'])
+        average_time = timedelta_to_float(test['average_time'])
         average_time |should| close_to(1.5, delta=.1)
     
     def test_knows_last_run_of_test_run(self):
@@ -111,9 +111,9 @@ class DatabaseVows(unittest.TestCase):
         self.add_result(name)
         self.add_result(name)
         
-        result = self.db.get_result(name)
+        result = self.db.get_last_result(name)
         
-        result['last_run_id'] |should| be_equal_to(self.db.current_run_id)
+        result['run_id'] |should| be_equal_to(self.db.current_run_id)
     
     def test_can_finish_test_run(self):
         name = 'test_name (that.SpecialTest)'
@@ -130,15 +130,11 @@ class DatabaseVows(unittest.TestCase):
         run['unexpectedSuccesses'] |should| be(0)
     
     def test_knows_id_of_last_successful_run(self):
-        self.db.add_run()
-        run = self.db.get_run()
-        # prevent finish_run from cleaning history
-        self.add_result('test_other_name (that.SpecialTest)', run=run)
         name = 'test_name (that.SpecialTest)'
-        self.add_result(name, status=ok.key, run=run)
-        self.db.finish_run(True)
+        self.add_result(name, status=ok.key)
+        self.db.finish_run(False)
         self.add_result(name, status=fail.key)
-        self.db.finish_run(True)
+        self.db.finish_run(False)
         
         self.db.get_last_successful_run_id() |should| be(1)
     
@@ -152,23 +148,16 @@ class DatabaseVows(unittest.TestCase):
         
         self.db.get_last_successful_run_id() |should| be(None)
     
-    def test_can_clean_history(self):
-        name = 'test_name (that.SpecialTest)'
-        self.add_result(name)
-        self.add_result(name)
-        
-        self.db.clean_history()
-        
-        self.db.total_runs |should| be(1)
-    
     def test_cleans_history_when_finishing_run(self):
         name = 'test_name (that.SpecialTest)'
         self.add_result(name)
-        self.db.finish_run(True)
+        self.db.finish_run(False)
         self.add_result(name)
         self.db.finish_run(True)
+        self.add_result(name)
+        self.db.finish_run(False)
         
-        self.db.total_runs |should| be(1)
+        self.db.total_runs |should| be(2)
     
     def test_does_not_clean_history_after_unsuccessful_run(self):
         name = 'test_name (that.SpecialTest)'
@@ -226,7 +215,7 @@ class DatabaseVows(unittest.TestCase):
         run_ids = []
         for i, status in enumerate((ok, fail, error, ok, skip)):
             self.add_result(name % (i, status.name), status=status.key)
-            run_ids.append(self.db.finish_run(True)['id'])
+            run_ids.append(self.db.finish_run(False)['id'])
         
         results = list(self.db.collect_results_after(run_ids[0]))
         results |should| each_be_equal_to([
@@ -238,6 +227,26 @@ class DatabaseVows(unittest.TestCase):
         results = list(self.db.collect_results_after(run_ids[2]))
         results |should| each_be_equal_to([
             'test_name_4_skipped (that.SpecialTest)',
+        ])
+        
+        results = list(self.db.collect_results_after(run_ids[4]))
+        results |should| be_empty
+    
+    def test_can_collect_non_successful_tests_after_certain_run_that_have_been_successful_later(self):
+        name = 'test_name (that.SpecialTest)'
+        run_ids = []
+        for status in (ok, fail, error, ok, skip):
+            self.add_result(name, status=status.key)
+            run_ids.append(self.db.finish_run(False)['id'])
+        
+        results = list(self.db.collect_results_after(run_ids[0]))
+        results |should| each_be_equal_to([
+            'test_name (that.SpecialTest)',
+        ])
+        
+        results = list(self.db.collect_results_after(run_ids[2]))
+        results |should| each_be_equal_to([
+            'test_name (that.SpecialTest)',
         ])
         
         results = list(self.db.collect_results_after(run_ids[4]))
