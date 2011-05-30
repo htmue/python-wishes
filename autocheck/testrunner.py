@@ -10,7 +10,7 @@ import time
 import status
 from colorizer import ColourWritelnDecorator, ColourScheme
 from compat import unittest
-from filtersuite import FilterLoader, FilterSuite
+from filtersuite import filter_suite_from_database
 
 
 try:
@@ -325,26 +325,23 @@ class TestRunner(object):
 class TestProgram(unittest.TestProgram):
     
     def __init__(self, module='__main__', defaultTest=None, argv=None,
-                    testRunner=None, testLoader=FilterLoader,
+                    testRunner=None, testLoader=unittest.defaultTestLoader,
                     exit=True, verbosity=1, failfast=None, catchbreak=None,
                     buffer=None, database=None):
         self.database = database
-        self.full_suite = testLoader.set_database(database)
         super(TestProgram, self).__init__(module=module, defaultTest=defaultTest,
             argv=argv, testRunner=testRunner, testLoader=testLoader, exit=exit,
             verbosity=verbosity, failfast=failfast, catchbreak=catchbreak,
             buffer=buffer)
     
-    def _do_discovery(self, argv):
-        super(TestProgram, self)._do_discovery(argv, Loader=self.testLoader)
-    
     def runTests(self):
         if self.catchbreak:
             unittest.installHandler()
+        tests, full_suite = filter_suite_from_database(self.test, self.database)
         testRunner = self.testRunner(verbosity=self.verbosity,
             failfast=self.failfast, buffer=self.buffer,
-            database=self.database, full_suite=self.full_suite)
-        self.result = testRunner.run(self.test)
+            database=self.database, full_suite=full_suite)
+        self.result = testRunner.run(tests)
         if self.exit:
             sys.exit(not self.result.wasSuccessful())
 
