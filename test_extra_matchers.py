@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 # Created by Hans-Thomas on 2011-05-15.
 #=============================================================================
-#   test_matchers.py ---
+#   test_extra_matchers.py ---
 #=============================================================================
 import mock
 from should_dsl import should, should_not
@@ -10,7 +10,7 @@ from extra_matchers import EachEqual
 from wishes.compat import unittest
 
 
-class EachEqualTest(unittest.TestCase):
+class EachEqualMatcherTest(unittest.TestCase):
     
     def test_sees_equality(self):
         matcher = EachEqual()(range(10))
@@ -40,7 +40,7 @@ class EachEqualTest(unittest.TestCase):
 
 
 
-class AssertCalledOnceWithTest(unittest.TestCase):
+class AssertCalledOnceWithMatcherTest(unittest.TestCase):
     
     def test_asserts_called_once(self):
         obj = mock.Mock()
@@ -60,4 +60,4 @@ class AssertCalledOnceWithTest(unittest.TestCase):
 
 
 #.............................................................................
-#   test_matchers.py
+#   test_extra_matchers.py
