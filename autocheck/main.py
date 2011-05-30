@@ -40,7 +40,7 @@ def single(args):
 
 def autocheck(args):
     handle_term()
-    root = AutocheckObserver('.', args)
+    root = AutocheckObserver('.', args, database=Database())
     log.debug('starting autocheck observer')
     while True:
         try:

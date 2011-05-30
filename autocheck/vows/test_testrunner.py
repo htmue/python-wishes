@@ -61,48 +61,54 @@ class DatabaseTestResultVows(TestTestCase):
         result, start, finish = self.start_test(db)
         
         result.addSuccess(self.test)
+        self.stop_test(result)
         
-        db.add_result |should| be_called_once_with(str(self.test), start, finish, ok.key)
+        db.add_results |should| be_called_once_with([(str(self.test), start, finish, ok.key)])
     
     def test_passes_on_failure_to_database(self, Database):
         db = Database()
         result, start, finish = self.start_test(db)
         
         result.addFailure(self.test, [None]*3)
+        self.stop_test(result)
         
-        db.add_result |should| be_called_once_with(str(self.test), start, finish, fail.key)
+        db.add_results |should| be_called_once_with([(str(self.test), start, finish, fail.key)])
     
     def test_passes_on_error_to_database(self, Database):
         db = Database()
         result, start, finish = self.start_test(db)
         
         result.addError(self.test, [None]*3)
+        self.stop_test(result)
         
-        db.add_result |should| be_called_once_with(str(self.test), start, finish, error.key)
+        db.add_results |should| be_called_once_with([(str(self.test), start, finish, error.key)])
     
     def test_passes_on_expected_failure_to_database(self, Database):
         db = Database()
         result, start, finish = self.start_test(db)
         
         result.addExpectedFailure(self.test, [None]*3)
+        self.stop_test(result)
         
-        db.add_result |should| be_called_once_with(str(self.test), start, finish, expected_failure.key)
+        db.add_results |should| be_called_once_with([(str(self.test), start, finish, expected_failure.key)])
     
     def test_passes_on_skip_to_database(self, Database):
         db = Database()
         result, start, finish = self.start_test(db)
         
         result.addSkip(self.test, 'reason')
+        self.stop_test(result)
         
-        db.add_result |should| be_called_once_with(str(self.test), start, finish, skip.key)
+        db.add_results |should| be_called_once_with([(str(self.test), start, finish, skip.key)])
     
     def test_passes_on_unexpected_success_to_database(self, Database):
         db = Database()
         result, start, finish = self.start_test(db)
         
         result.addUnexpectedSuccess(self.test)
+        self.stop_test(result)
         
-        db.add_result |should| be_called_once_with(str(self.test), start, finish, unexpected_success.key)
+        db.add_results |should| be_called_once_with([(str(self.test), start, finish, unexpected_success.key)])
 
 
 @mock.patch('autocheck.db.Database')

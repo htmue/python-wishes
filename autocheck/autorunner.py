@@ -20,13 +20,14 @@ DEFAULT_FILEPATTERN = re.compile(r'.*\.(py|txt|yaml|sql|html|js|css|feature)$')
 
 class AutocheckObserver(TreeObserver):
     
-    def __init__(self, dir, args, filepattern=DEFAULT_FILEPATTERN):
+    def __init__(self, dir, args, filepattern=DEFAULT_FILEPATTERN, database=None):
         self._lock = threading.Lock()
         self.child = None
         self.args = args + ['--single']
         for arg in args:
             if arg.startswith('--python='):
                 self.args = [arg.split('=', 1)[1]] + self.args
+        self.db = database
         super(AutocheckObserver, self).__init__(dir, filepattern, ignored_dirs_pattern(dir))
     
     @property
@@ -55,20 +56,12 @@ class AutocheckObserver(TreeObserver):
     
     def run_vows(self):
         returncode = self.run_tests(self.args)
-        db = Database()
+        if self.db is None:
+            return False
         try:
-            last_run_id = db.get_last_run_id()
-            last_successful_run_id = db.get_last_successful_run_id()
-            last_successful_full_run_id = db.get_last_successful_full_run_id()
-            if last_run_id != last_successful_run_id:
-                again = False
-            elif last_run_id == last_successful_full_run_id:
-                again = False
-            else:
-                again = True
+            return self.db.run_again()
         finally:
-            db.close()
-        return again
+            self.db.close()
     
     def action(self, entries):
         while self.run_vows():

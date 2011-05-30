@@ -10,7 +10,7 @@ import time
 import status
 from colorizer import ColourWritelnDecorator, ColourScheme
 from compat import unittest
-from filtersuite import filter_suite_from_database
+from filtersuite import filter_suite
 
 
 try:
@@ -60,10 +60,10 @@ class TestResult(unittest.TestResult):
             if self.descriptions and doc_first_line:
                 spec = doc_first_line
             else:
-                spec = self.specify(test)
+                spec = self._specify(test)
             if test.__class__ != self.current_class:
                 self.current_class = test.__class__
-                prefix = self.specify_class()
+                prefix = self._specify_class()
             else:
                 prefix = '  '
             return prefix + spec
@@ -77,31 +77,14 @@ class TestResult(unittest.TestResult):
         else:
             return str(test)
     
-    def specify(self, test):
-        if test._testMethodName.startswith('test_'):
-            return test._testMethodName[5:].replace('_', ' ')
-        else:
-            return str(test)
+    def startTestRun(self):
+        super(TestResult, self).startTestRun()
+        self.results = []
     
-    def specify_class(self):
-        name = self.current_class.__name__
-        if name.endswith('Test') or name.endswith('Vows'):
-            name = name[:-4]
-        return '\n%s:\n  ' % ' '.join(camel_to_underscore(name).replace('_', ' ').split())
-    
-    def _write(self, all, dots, colour):
-        if self.showAll and all is not None:
-            self.stream.writeln(all, colour=colour)
-        elif self.dots and dots is not None:
-            self.stream.write(dots, colour=colour)
-            self.stream.flush()
-    
-    def _write_status(self, status):
-        self._write(status.name, status.key, getattr(self.scheme, status.colour))
-    
-    def _write_scenario_result_indent(self, test):
-        if self.specs and getattr(test, 'is_scenario', False):
-            self.stream.write('  ... ')
+    def stopTestRun(self):
+        super(TestResult, self).stopTestRun()
+        if self.database is not None and self.results:
+            self.database.add_results(self.results)
     
     def startTest(self, test):
         super(TestResult, self).startTest(test)
@@ -112,13 +95,6 @@ class TestResult(unittest.TestResult):
                 self.stream.writeln()
             self.stream.flush()
         self.time_started = self.now()
-    
-    def _add_result(self, test, status):
-        if self.database is not None:
-            name = str(test)
-            if not name.endswith('(unittest.loader.ModuleImportFailure)'):
-                finished = self.now()
-                self.database.add_result(name, self.time_started, finished, status)
     
     def addSuccess(self, test):
         super(TestResult, self).addSuccess(test)
@@ -201,6 +177,36 @@ class TestResult(unittest.TestResult):
             self.stream.writeln(self.separator2)
             self.stream.writeln('%s' % err, colour=colour)
 
+    
+    def _add_result(self, test, status):
+        if self.database is not None:
+            self.results.append((str(test), self.time_started, self.now(), status))
+    
+    def _specify(self, test):
+        if test._testMethodName.startswith('test_'):
+            return test._testMethodName[5:].replace('_', ' ')
+        else:
+            return str(test)
+    
+    def _specify_class(self):
+        name = self.current_class.__name__
+        if name.endswith('Test') or name.endswith('Vows'):
+            name = name[:-4]
+        return '\n%s:\n  ' % ' '.join(camel_to_underscore(name).replace('_', ' ').split())
+    
+    def _write(self, all, dots, colour):
+        if self.showAll and all is not None:
+            self.stream.writeln(all, colour=colour)
+        elif self.dots and dots is not None:
+            self.stream.write(dots, colour=colour)
+            self.stream.flush()
+    
+    def _write_status(self, status):
+        self._write(status.name, status.key, getattr(self.scheme, status.colour))
+    
+    def _write_scenario_result_indent(self, test):
+        if self.specs and getattr(test, 'is_scenario', False):
+            self.stream.write('  ... ')
 
 
 class TestRunner(object):
@@ -337,7 +343,12 @@ class TestProgram(unittest.TestProgram):
     def runTests(self):
         if self.catchbreak:
             unittest.installHandler()
-        tests, full_suite = filter_suite_from_database(self.test, self.database)
+        if self.database is None:
+            tests, full_suite = self.test, True
+        else:
+            failures = self.database.failures()
+            tests = filter_suite(self.test, failures)
+            full_suite = tests is self.test
         testRunner = self.testRunner(verbosity=self.verbosity,
             failfast=self.failfast, buffer=self.buffer,
             database=self.database, full_suite=full_suite)

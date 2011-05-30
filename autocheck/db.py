@@ -168,6 +168,11 @@ class Database(object):
             (runs, average_time, name))
     
     @with_cursor
+    def add_results(self, cursor, results):
+        for name, started, finished, status in results:
+            self.add_result(name, started, finished, status, cursor=cursor)
+    
+    @with_cursor
     def get_last_result(self, cursor, name):
         cursor.execute('SELECT * FROM result WHERE name=? ORDER BY finished DESC LIMIT 1', (name,))
         result = cursor.fetchone()
@@ -234,6 +239,14 @@ class Database(object):
         return self.get_last_run_id('WHERE wasSuccessful=1 AND full=1', cursor=cursor)
     
     @with_cursor
+    def get_last_run_ids(self, cursor):
+        return (
+            self.get_last_run_id(cursor=cursor),
+            self.get_last_successful_run_id(cursor=cursor),
+            self.get_last_successful_full_run_id(cursor=cursor),
+        )
+    
+    @with_cursor
     def collect_results_after(self, cursor, run_id, status=ok.key, exclude=True):
         cursor.execute('''SELECT DISTINCT name FROM result WHERE run_id IN (
             SELECT id FROM run WHERE started>(
@@ -241,6 +254,26 @@ class Database(object):
             )) AND status%s?''' % ('=', '!=')[bool(exclude)], (run_id, status))
         for row in cursor.fetchall():
             yield row[0]
+    
+    @with_cursor
+    def failures(self, cursor):
+        last, successful, full = self.get_last_run_ids(cursor=cursor)
+        if last != successful:
+            return set(self.collect_results_after(full, cursor=cursor))
+        else:
+            return set()
+    
+    @with_cursor
+    def run_again(self, cursor):
+        last, successful, full = self.get_last_run_ids(cursor=cursor)
+        if last is None:
+            return False
+        elif last != successful:
+            return False
+        elif last == full:
+            return False
+        else:
+            return True
     
     @with_cursor
     def clean_history(self, cursor):
