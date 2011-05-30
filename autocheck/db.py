@@ -36,7 +36,7 @@ class Database(object):
             finished TIMESTAMP,
             average_time TIMEDELTA,
             last_run_id INTEGER REFERENCES run(id),
-            result VARCHAR
+            status VARCHAR
         )''',
     )
     
@@ -106,27 +106,27 @@ class Database(object):
         cursor.execute('SELECT * FROM run WHERE id = ?', [run_id or self.current_run_id])
         return cursor.fetchone()
     
-    def add_result(self, name, started, finished, result):
+    def add_result(self, name, started, finished, status):
         with self.transaction() as cursor:
-            result_row = self._get_result(cursor, name)
-            if result_row is None:
-                self._insert_result(cursor, name, started, finished, result)
+            result = self._get_result(cursor, name)
+            if result is None:
+                self._insert_result(cursor, name, started, finished, status)
             else:
-                self._update_result(cursor, result_row, started, finished, result)
+                self._update_result(cursor, result, started, finished, status)
     
-    def _insert_result(self, cursor, name, started, finished, result):
-        cursor.execute('INSERT INTO result(last_run_id,name,runs,started,finished,average_time,result) VALUES (?,?,?,?,?,?,?)',
-            (self.current_run_id, name, 1, started, finished, finished - started, result))
+    def _insert_result(self, cursor, name, started, finished, status):
+        cursor.execute('INSERT INTO result(last_run_id,name,runs,started,finished,average_time,status) VALUES (?,?,?,?,?,?,?)',
+            (self.current_run_id, name, 1, started, finished, finished - started, status))
     
-    def _update_result(self, cursor, result_row, started, finished, result):
-        name = result_row['name']
-        runs = result_row['runs'] + 1
-        average_time = result_row['average_time']
-        if result == ok.key:
+    def _update_result(self, cursor, result, started, finished, status):
+        name = result['name']
+        runs = result['runs'] + 1
+        average_time = result['average_time']
+        if status == ok.key:
             total_time = average_time * (runs - 1) + (finished - started)
             average_time = total_time / runs
-        cursor.execute('UPDATE result SET last_run_id=?,runs=?,started=?,finished=?,average_time=?,result=? WHERE name=?',
-            (self.current_run_id, runs, started, finished, average_time, result, name))
+        cursor.execute('UPDATE result SET last_run_id=?,runs=?,started=?,finished=?,average_time=?,status=? WHERE name=?',
+            (self.current_run_id, runs, started, finished, average_time, status, name))
     
     def _get_result(self, cursor, name):
         cursor.execute('SELECT * FROM result WHERE name = ?', [name])
@@ -142,11 +142,11 @@ class Database(object):
     def total_runs_by_test_name(self, name):
         return self.get_result(name)['runs']
     
-    def _get_result_count(self, cursor, run_id, result=None):
-        if result is None:
+    def _get_result_count(self, cursor, run_id, status=None):
+        if status is None:
             cursor.execute('SELECT count(*) FROM result WHERE last_run_id=?', [run_id])
         else:
-            cursor.execute('SELECT count(*) FROM result WHERE result=? AND last_run_id=?', (result, run_id))
+            cursor.execute('SELECT count(*) FROM result WHERE status=? AND last_run_id=?', (status, run_id))
         return cursor.fetchone()[0]
     
     def _get_result_counts(self, cursor, run_id):
@@ -193,12 +193,12 @@ class Database(object):
     def get_last_successful_full_run_id(self):
         return self.get_last_run_id('WHERE wasSuccessful=1 AND full=1')
     
-    def collect_results_after(self, run_id, result=ok.key, exclude=True):
+    def collect_results_after(self, run_id, status=ok.key, exclude=True):
         with self.transaction() as cursor:
             cursor.execute('''SELECT name FROM result WHERE last_run_id IN (
                 SELECT id FROM run WHERE started>(
                     SELECT started FROM run WHERE id=?
-                )) AND result%s?''' % ('=', '!=')[bool(exclude)], (run_id, result))
+                )) AND status%s?''' % ('=', '!=')[bool(exclude)], (run_id, status))
             for row in cursor.fetchall():
                 yield row[0]
     
