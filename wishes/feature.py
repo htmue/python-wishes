@@ -9,6 +9,12 @@ import threading
 
 __unittest = True
 
+class World(threading.local):
+    def _clear(self):
+        self.__dict__.clear()
+
+world = World()
+
 class FeatureTest(object):
     scenarios = dict()
     
@@ -18,6 +24,7 @@ class FeatureTest(object):
         self.scenario.run(self)
     
     def run(self, result=None):
+        world._clear()
         self.result = result
         super(FeatureTest, self).run(result)
     
@@ -275,11 +282,6 @@ def step(pattern):
         return definition
     return step_definition
 
-
-class World(threading.local):
-    pass
-
-world = World()
 
 #.............................................................................
 #   feature.py

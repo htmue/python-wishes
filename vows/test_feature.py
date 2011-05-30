@@ -8,7 +8,7 @@ from should_dsl import should
 import mock
 
 from wishes.compat import unittest
-from wishes.feature import world, StepDefinition, step
+from wishes.feature import StepDefinition, step, world, World
 from wishes.loader import load_feature
 
 
@@ -35,6 +35,7 @@ class FeatureTest(unittest.TestCase):
             When I add something undefined
             Then steps afterwards are not run
         ''')
+        world = World()
         world.there_is_a_step = False
         world.another_step = False
         world.steps_afterwards = False
@@ -61,6 +62,7 @@ class FeatureTest(unittest.TestCase):
           Scenario: with background 2
             And a scenario step 2
         ''')
+        world = World()
         world.background_step = 0
         world.steps_run = []
         result = unittest.TestResult()
@@ -90,6 +92,7 @@ class FeatureTest(unittest.TestCase):
           Scenario: with background 2
             And a scenario step 2
         ''')
+        world = World()
         world.steps_run = []
         result = unittest.TestResult()
         feature.run(result)
@@ -178,6 +181,7 @@ class FeatureTest(unittest.TestCase):
             | key 1 | value 1   |
             | key 2 | value 2   |
         ''')
+        world = World()
         world.run = []
         result = unittest.TestResult()
         feature.run(result)
@@ -204,6 +208,7 @@ class FeatureTest(unittest.TestCase):
             | first         |
             | second        |
         ''')
+        world = World()
         world.run = []
         result = unittest.TestResult()
         feature.run(result)
@@ -229,6 +234,7 @@ class FeatureTest(unittest.TestCase):
             | key   | first         |
             | but   | second        |
         ''')
+        world = World()
         world.run = []
         result = unittest.TestResult()
         feature.run(result)
@@ -254,6 +260,7 @@ class FeatureTest(unittest.TestCase):
             | first         |
             | second        |
         ''')
+        world = World()
         world.run = []
         result = unittest.TestResult()
         feature.run(result)
@@ -323,7 +330,7 @@ class FeatureTest(unittest.TestCase):
         result = self.run_feature_with_result_step_handlers(feature, 'addStepError')
         result.wasSuccessful() |should| be(False)
         result.addStepError.call_count |should| be(1)
-
+    
     def test_reports_undefined_step_to_result_object(self):
         feature = load_feature('''
         Feature: report steps
@@ -334,6 +341,26 @@ class FeatureTest(unittest.TestCase):
         len(result.skipped) |should| be(1)
         result.wasSuccessful() |should| be(True)
         result.addStepUndefined.call_count |should| be(1)
+    
+    def test_clears_world_between_scenarios(self):
+        @step('set a world var')
+        def set_world(step):
+            world.var = 'set'
+        @step('check that world var')
+        def check_var(step):
+            getattr(world, 'var', None) |should| be(None)
+        feature = load_feature('''
+        Feature: clears world between scenarios
+          Scenario: first
+            When I set a world var
+          Scenario: second
+            Then I check that world var
+        ''')
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+
 
 #.............................................................................
 #   test_feature.py
