@@ -74,7 +74,7 @@ class StepTest(unittest.TestCase):
 
 class HashesTest(unittest.TestCase):
     
-    def test_maps_values_to_keys(self):
+    def test_returns_dicts_that_map_values_to_given_keys_when_iterated(self):
         hash = Hashes(('first', 'second'), [
             ('first 1', 'second 1'),
             ('first 2', 'second 2'),
@@ -84,7 +84,7 @@ class HashesTest(unittest.TestCase):
             dict(first='first 2', second='second 2'),
         ])
     
-    def test_fixes_keys_for_outline(self):
+    def test_fixes_brackets_surronding_keys_for_outline(self):
         hash = Hashes(('first', 'second'), [
             ('first 1', 'second 1'),
             ('first 2', 'second 2'),
@@ -95,7 +95,7 @@ class HashesTest(unittest.TestCase):
             {'<first>': 'first 2', '<second>': 'second 2'},
         ])
     
-    def test_does_not_fix_keys_that_do_not_need_to_be_fixed(self):
+    def test_does_not_fix_keys_that_are_already_bracketed(self):
         hash = Hashes(('<first>', '[second]', '{third}', '(fourth)'), [range(4)])
         hash.fix_keys_for_outline()
         list(hash) |should| each_be_equal_to([
