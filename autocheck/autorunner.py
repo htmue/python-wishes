@@ -23,7 +23,7 @@ class AutocheckObserver(TreeObserver):
     def __init__(self, dir, args, filepattern=DEFAULT_FILEPATTERN, database=None):
         self._lock = threading.Lock()
         self.child = None
-        self.args = args + ['--single']
+        self.args = args + ['--once']
         for arg in args:
             if arg.startswith('--python='):
                 self.args = [arg.split('=', 1)[1]] + self.args

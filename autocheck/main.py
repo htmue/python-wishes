@@ -51,10 +51,10 @@ def autocheck(args):
                 break
 
 def main(args=sys.argv):
-    if '--single' in args:
+    if '--once' in args:
         if args[1] == '-m' and args[2] in ('autocheck', 'autocheck.main'):
             args[1:3] = []
-        args.remove('--single')
+        args.remove('--once')
         single(args)
     else:
         autocheck(args)
