@@ -1,6 +1,2 @@
 PyYAML==3.09
-mock==0.7.1
-py-Growl-2-6==0.0.7
-py-kqueue==2.0.1
 python-termstyle==0.1.10
--e git+https://github.com/hugobr/should-dsl#egg=should_dsl
