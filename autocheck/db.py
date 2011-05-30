@@ -264,7 +264,7 @@ class Database(object):
             return set()
     
     @with_cursor
-    def run_again(self, cursor):
+    def should_run_again(self, cursor):
         last, successful, full = self.get_last_run_ids(cursor=cursor)
         if last is None:
             return False

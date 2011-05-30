@@ -55,7 +55,7 @@ class AutocheckObserver(TreeObserver):
         if self.db is None:
             return False
         try:
-            return self.db.run_again()
+            return self.db.should_run_again()
         finally:
             self.db.close()
     
