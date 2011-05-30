@@ -47,15 +47,11 @@ class AutocheckObserver(TreeObserver):
             # child.send_signal(signal.SIGINT)
             return True
     
-    def run_tests(self, args):
-        self.child = subprocess.Popen(args, close_fds=True)
+    def run_tests(self):
+        self.child = subprocess.Popen(self.args, close_fds=True)
         self.child.wait()
         returncode = self.child.returncode
         self.child = None
-        return returncode
-    
-    def run_vows(self):
-        returncode = self.run_tests(self.args)
         if self.db is None:
             return False
         try:
@@ -64,7 +60,7 @@ class AutocheckObserver(TreeObserver):
             self.db.close()
     
     def action(self, entries):
-        while self.run_vows():
+        while self.run_tests():
             pass
 
 
