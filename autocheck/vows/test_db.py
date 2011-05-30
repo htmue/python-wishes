@@ -4,11 +4,12 @@
 #   test_db.py --- Tests database vows
 #=============================================================================
 import datetime
+from functools import partial
 
 from should_dsl import should, should_not
 
 from autocheck.compat import unittest
-from autocheck.db import Database, timedelta_to_float
+from autocheck.db import Database, timedelta_to_float, RunDoesNotExist, ResultDoesNotExist
 from autocheck.status import ok, error, fail, skip
 
 
@@ -53,6 +54,14 @@ class DatabaseVows(unittest.TestCase):
         run['started'] |should| be_greater_than(before)
         run['started'] |should| be_less_than(after)
     
+    def test_raises_RunDoesNotExist_when_no_run_exists(self):
+        self.db.get_run |should| throw(RunDoesNotExist)
+    
+    def test_raises_RunDoesNotExist_when_run_does_not_exist(self):
+        get_run = partial(self.db.get_run, 1)
+        
+        get_run |should| throw(RunDoesNotExist)
+    
     def add_result(self, name, status=ok.key, started=None, finished=None, run=None):
         if run is None:
             self.db.add_run()
@@ -69,6 +78,11 @@ class DatabaseVows(unittest.TestCase):
         self.add_result(name)
         
         self.db.total_runs_by_test_name(name) |should| be(1)
+    
+    def test_raises_ResultDoesNotExist_when_test_does_not_exist(self):
+        get_result = partial(self.db.get_result, 'hi')
+        
+        get_result |should| throw(ResultDoesNotExist)
     
     def test_knows_number_of_test_runs(self):
         name = 'test_name (that.SpecialTest)'

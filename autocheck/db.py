@@ -4,6 +4,7 @@
 #   db.py --- Tests database
 #=============================================================================
 import datetime
+import functools
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -11,11 +12,14 @@ from contextlib import contextmanager
 from status import Status, ok
 
 
-class DatabaseError(Exception):
-    pass
+class DatabaseError(Exception): pass
+class DoesNotExist(DatabaseError): pass
+class RunDoesNotExist(DoesNotExist): pass
+class ResultDoesNotExist(DoesNotExist): pass
 
 class Database(object):
     _TABLES = dict(
+    
         run = '''run(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             started TIMESTAMP,
@@ -29,6 +33,7 @@ class Database(object):
             expectedFailures INTEGER,
             unexpectedSuccesses INTEGER
             )''',
+    
         result = '''result(
             name VARCHAR PRIMARY KEY,
             runs INTEGER,
@@ -47,19 +52,11 @@ class Database(object):
         else:
             self.path = path
         self.connection = None
+        self.current_run_id = None
     
     def connect(self):
         self.connection = sqlite3.connect(self.path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         self.connection.row_factory = sqlite3.Row
-    
-    def _setup(self):
-        with self.transaction() as cursor:
-            cursor.execute('PRAGMA foreign_keys = ON')
-            for name in self._TABLES:
-                self._create_table(cursor, name)
-    
-    def _create_table(self, cursor, name):
-        cursor.execute('CREATE TABLE IF NOT EXISTS %s' % self._TABLES[name])
     
     def close(self):
         self.connection.close()
@@ -72,7 +69,7 @@ class Database(object):
     def ensure_connection(self):
         if not self.is_connected:
             self.connect()
-            self._setup()
+            self.setup()
     
     @contextmanager
     def transaction(self):
@@ -85,10 +82,31 @@ class Database(object):
         else:
             self.connection.commit()
     
-    def add_run(self):
-        with self.transaction() as cursor:
-            cursor.execute('INSERT INTO run(started) VALUES (?)', [datetime.datetime.utcnow()])
-            self.current_run_id = cursor.lastrowid
+    def with_cursor(method):
+        @functools.wraps(method)
+        def wrapper(self, *args, **kwargs):
+            cursor = kwargs.pop('cursor', None)
+            if cursor is None:
+                with self.transaction() as cursor:
+                    return method(self, cursor, *args, **kwargs)
+            else:
+                return method(self, cursor, *args, **kwargs)
+        return wrapper
+    
+    @with_cursor
+    def setup(self, cursor):
+        cursor.execute('PRAGMA foreign_keys = ON')
+        for name in self._TABLES:
+            self.create_table(name, cursor=cursor)
+    
+    @with_cursor
+    def create_table(self, cursor, name):
+        cursor.execute('CREATE TABLE IF NOT EXISTS %s' % self._TABLES[name])
+    
+    @with_cursor
+    def add_run(self, cursor):
+        cursor.execute('INSERT INTO run(started) VALUES (?)', [datetime.datetime.utcnow()])
+        self.current_run_id = cursor.lastrowid
     
     @property
     def total_runs(self):
@@ -97,22 +115,26 @@ class Database(object):
             count = cursor.fetchone()[0]
         return count
     
-    def get_run(self, run_id=None):
-        with self.transaction() as cursor:
-            row = self._get_run(cursor)
-        return row
+    @with_cursor
+    def get_run(self, cursor, run_id=None):
+        if run_id is None:
+            run_id = self.current_run_id
+        if run_id is None:
+            raise RunDoesNotExist()
+        cursor.execute('SELECT * FROM run WHERE id = ?', [run_id])
+        run = cursor.fetchone()
+        if run is None:
+            raise RunDoesNotExist(run_id)
+        return run
     
-    def _get_run(self, cursor, run_id=None):
-        cursor.execute('SELECT * FROM run WHERE id = ?', [run_id or self.current_run_id])
-        return cursor.fetchone()
-    
-    def add_result(self, name, started, finished, status):
-        with self.transaction() as cursor:
-            result = self._get_result(cursor, name)
-            if result is None:
-                self._insert_result(cursor, name, started, finished, status)
-            else:
-                self._update_result(cursor, result, started, finished, status)
+    @with_cursor
+    def add_result(self, cursor, name, started, finished, status):
+        try:
+            result = self.get_result(name, cursor=cursor)
+        except ResultDoesNotExist:
+            self._insert_result(cursor, name, started, finished, status)
+        else:
+            self._update_result(cursor, result, started, finished, status)
     
     def _insert_result(self, cursor, name, started, finished, status):
         cursor.execute('INSERT INTO result(last_run_id,name,runs,started,finished,average_time,status) VALUES (?,?,?,?,?,?,?)',
@@ -128,41 +150,40 @@ class Database(object):
         cursor.execute('UPDATE result SET last_run_id=?,runs=?,started=?,finished=?,average_time=?,status=? WHERE name=?',
             (self.current_run_id, runs, started, finished, average_time, status, name))
     
-    def _get_result(self, cursor, name):
+    @with_cursor
+    def get_result(self, cursor, name):
         cursor.execute('SELECT * FROM result WHERE name = ?', [name])
-        return cursor.fetchone()
-    
-    def get_result(self, name):
-        with self.transaction() as cursor:
-            row = self._get_result(cursor, name)
+        row = cursor.fetchone()
         if row is None:
-            raise DatabaseError('no such test case: %r' % name)
+            raise ResultDoesNotExist(name)
         return row
     
     def total_runs_by_test_name(self, name):
         return self.get_result(name)['runs']
     
-    def _get_result_count(self, cursor, run_id, status=None):
+    @with_cursor
+    def get_result_count(self, cursor, run_id, status=None):
         if status is None:
             cursor.execute('SELECT count(*) FROM result WHERE last_run_id=?', [run_id])
         else:
             cursor.execute('SELECT count(*) FROM result WHERE status=? AND last_run_id=?', (status, run_id))
         return cursor.fetchone()[0]
     
-    def _get_result_counts(self, cursor, run_id):
+    @with_cursor
+    def get_result_counts(self, cursor, run_id):
         for status in Status.ordered:
             if status.name != ok.name:
-                yield status.name_plural, self._get_result_count(cursor, run_id, status.key)
+                yield status.name_plural, self.get_result_count(run_id, status.key, cursor=cursor)
     
     def finish_run(self, full):
         with self.transaction() as cursor:
             run_id = self.current_run_id
-            data = dict(self._get_result_counts(cursor, run_id))
+            data = dict(self.get_result_counts(run_id, cursor=cursor))
             data.update(
                 run_id = run_id,
                 finished = datetime.datetime.utcnow(),
                 wasSuccessful = data['errors'] == data['failures'] == 0,
-                testsRun = self._get_result_count(cursor, run_id),
+                testsRun = self.get_result_count(run_id, cursor=cursor),
                 full = full,
             )
             cursor.execute('''UPDATE run SET
@@ -175,9 +196,9 @@ class Database(object):
                 skipped=:skipped,
                 expectedFailures=:expectedFailures,
                 unexpectedSuccesses=:unexpectedSuccesses WHERE id=:run_id''', data)
-            run = self._get_run(cursor, run_id)
+            run = self.get_run(run_id, cursor=cursor)
             if full and run['wasSuccessful']:
-                self._clean_history(cursor)
+                self.clean_history(cursor=cursor)
         return run
     
     def get_last_run_id(self, where=''):
@@ -202,11 +223,8 @@ class Database(object):
             for row in cursor.fetchall():
                 yield row[0]
     
-    def clean_history(self):
-        with self.transaction() as cursor:
-            self._clean_history(cursor)
-    
-    def _clean_history(self, cursor):
+    @with_cursor
+    def clean_history(self, cursor):
         cursor.execute('DELETE FROM run WHERE (SELECT count(*) FROM result WHERE last_run_id=run.id)=0')
 
 
