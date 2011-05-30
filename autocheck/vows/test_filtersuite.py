@@ -4,6 +4,7 @@
 #   test_filtersuite.py --- FilterSuite vows
 #=============================================================================
 import os.path
+import re
 
 import yaml
 from should_dsl import should
@@ -71,42 +72,42 @@ class FilterSuiteTestCaseVows(FilterSuiteTestCase):
     def test_handles_flat_suite_properly(self):
         suite = self.get_suite('flat')
         
-        map(str, suite) |should| each_be_equal_to([
-    	    'test_one (autocheck.vows.test_filtersuite.Test_flat)',
-    	    'test_three (autocheck.vows.test_filtersuite.Test_flat)',
-    	    'test_two (autocheck.vows.test_filtersuite.Test_flat)',
+        map(suite_str, suite) |should| each_be_equal_to([
+    	    'test_one (Test_flat)',
+    	    'test_three (Test_flat)',
+    	    'test_two (Test_flat)',
         ])
     
     def test_handles_nested_suite_properly(self):
         suite = self.get_suite('nested')
         
-        map(str, suite) |should| each_be_equal_to([
-            '<unittest.suite.TestSuite tests=['
-                '<autocheck.vows.test_filtersuite.Test_nested_first testMethod=test_one>, '
-                '<autocheck.vows.test_filtersuite.Test_nested_first testMethod=test_two>]>',
-            '<unittest.suite.TestSuite tests=['
-                '<autocheck.vows.test_filtersuite.Test_nested_second testMethod=test_four>, '
-                '<autocheck.vows.test_filtersuite.Test_nested_second testMethod=test_three>]>',
+        map(suite_str, suite) |should| each_be_equal_to([
+            '<TestSuite tests=['
+                '<Test_nested_first testMethod=test_one>, '
+                '<Test_nested_first testMethod=test_two>]>',
+            '<TestSuite tests=['
+                '<Test_nested_second testMethod=test_four>, '
+                '<Test_nested_second testMethod=test_three>]>',
         ])
     
     def test_handles_mixed_suite_properly(self):
         suite = self.get_suite('mixed')
         
-        map(str, suite) |should| each_be_equal_to([
-            '<unittest.suite.TestSuite tests=['
-                '<autocheck.vows.test_filtersuite.Test_mixed_flat testMethod=test_one>, '
-                '<autocheck.vows.test_filtersuite.Test_mixed_flat testMethod=test_two>]>',
-            '<unittest.suite.TestSuite tests=['
-                '<unittest.suite.TestSuite tests=['
-                    '<autocheck.vows.test_filtersuite.Test_mixed_nested_first testMethod=test_four>, '
-                    '<autocheck.vows.test_filtersuite.Test_mixed_nested_first testMethod=test_three>]>, '
-                '<unittest.suite.TestSuite tests=['
-                    '<autocheck.vows.test_filtersuite.Test_mixed_nested_second testMethod=test_five>, '
-                    '<autocheck.vows.test_filtersuite.Test_mixed_nested_second testMethod=test_six>]>, '
-                    '<unittest.suite.TestSuite tests=['
-                        '<unittest.suite.TestSuite tests=['
-                            '<autocheck.vows.test_filtersuite.Test_mixed_nested_third_deep testMethod=test_eight>, '
-                            '<autocheck.vows.test_filtersuite.Test_mixed_nested_third_deep testMethod=test_seven>]>]>]>',
+        map(suite_str, suite) |should| each_be_equal_to([
+            '<TestSuite tests=['
+                '<Test_mixed_flat testMethod=test_one>, '
+                '<Test_mixed_flat testMethod=test_two>]>',
+            '<TestSuite tests=['
+                '<TestSuite tests=['
+                    '<Test_mixed_nested_first testMethod=test_four>, '
+                    '<Test_mixed_nested_first testMethod=test_three>]>, '
+                '<TestSuite tests=['
+                    '<Test_mixed_nested_second testMethod=test_five>, '
+                    '<Test_mixed_nested_second testMethod=test_six>]>, '
+                    '<TestSuite tests=['
+                        '<TestSuite tests=['
+                            '<Test_mixed_nested_third_deep testMethod=test_eight>, '
+                            '<Test_mixed_nested_third_deep testMethod=test_seven>]>]>]>',
         ])
 
 
@@ -132,10 +133,10 @@ class FlattenSuiteVows(FilterSuiteTestCase):
         
         flattened = flatten_suite(suite)
         
-        map(str, flattened) |should| each_be_equal_to([
-    	    'test_one (autocheck.vows.test_filtersuite.Test_flat)',
-    	    'test_three (autocheck.vows.test_filtersuite.Test_flat)',
-    	    'test_two (autocheck.vows.test_filtersuite.Test_flat)',
+        map(suite_str, flattened) |should| each_be_equal_to([
+    	    'test_one (Test_flat)',
+    	    'test_three (Test_flat)',
+    	    'test_two (Test_flat)',
         ])
     
     def test_handles_nested_suite_properly(self):
@@ -143,11 +144,11 @@ class FlattenSuiteVows(FilterSuiteTestCase):
         
         flattened = flatten_suite(suite)
         
-        map(str, flattened) |should| each_be_equal_to([
-            'test_one (autocheck.vows.test_filtersuite.Test_nested_first)',
-            'test_two (autocheck.vows.test_filtersuite.Test_nested_first)',
-            'test_four (autocheck.vows.test_filtersuite.Test_nested_second)',
-            'test_three (autocheck.vows.test_filtersuite.Test_nested_second)',
+        map(suite_str, flattened) |should| each_be_equal_to([
+            'test_one (Test_nested_first)',
+            'test_two (Test_nested_first)',
+            'test_four (Test_nested_second)',
+            'test_three (Test_nested_second)',
         ])
     
     def test_handles_mixed_suite_properly(self):
@@ -155,15 +156,15 @@ class FlattenSuiteVows(FilterSuiteTestCase):
         
         flattened = flatten_suite(suite)
         
-        map(str, flattened) |should| each_be_equal_to([
-            'test_one (autocheck.vows.test_filtersuite.Test_mixed_flat)',
-            'test_two (autocheck.vows.test_filtersuite.Test_mixed_flat)',
-            'test_four (autocheck.vows.test_filtersuite.Test_mixed_nested_first)',
-            'test_three (autocheck.vows.test_filtersuite.Test_mixed_nested_first)',
-            'test_five (autocheck.vows.test_filtersuite.Test_mixed_nested_second)',
-            'test_six (autocheck.vows.test_filtersuite.Test_mixed_nested_second)',
-            'test_eight (autocheck.vows.test_filtersuite.Test_mixed_nested_third_deep)',
-            'test_seven (autocheck.vows.test_filtersuite.Test_mixed_nested_third_deep)',
+        map(suite_str, flattened) |should| each_be_equal_to([
+            'test_one (Test_mixed_flat)',
+            'test_two (Test_mixed_flat)',
+            'test_four (Test_mixed_nested_first)',
+            'test_three (Test_mixed_nested_first)',
+            'test_five (Test_mixed_nested_second)',
+            'test_six (Test_mixed_nested_second)',
+            'test_eight (Test_mixed_nested_third_deep)',
+            'test_seven (Test_mixed_nested_third_deep)',
         ])
 
 
@@ -185,7 +186,7 @@ class FilterSuiteVows(FilterSuiteTestCase):
     
     def test_returns_only_tests_from_failures(self):
         suite = self.get_suite('flat')
-        failures = ['test_two (autocheck.vows.test_filtersuite.Test_flat)']
+        failures = ['test_two (%s.Test_flat)' % __name__]
         
         filtered = filter_suite(suite, set(failures))
         
@@ -198,6 +199,9 @@ class FilterSuiteVows(FilterSuiteTestCase):
         
         map(str, filtered) |should| each_be_equal_to(map(str, flatten_suite(suite)))
 
+
+def suite_str(suite):
+    return re.sub(r'unittest2?\.suite\.', '', str(suite)).replace(__name__+'.', '')
 
 #.............................................................................
 #   test_filtersuite.py
