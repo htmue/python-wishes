@@ -64,12 +64,12 @@ class FilterSuiteTestCaseVows(FilterSuiteTestCase):
         
         suite |should| be_instance_of(unittest.TestSuite)
     
-    def test_handles_empty_suite_properly(self):
+    def test_creates_empty_suite_properly(self):
         suite = self.get_suite('empty')
         
         map(str, suite) |should| each_be_equal_to([])
     
-    def test_handles_flat_suite_properly(self):
+    def test_creates_flat_suite_properly(self):
         suite = self.get_suite('flat')
         
         map(suite_str, suite) |should| each_be_equal_to([
@@ -78,7 +78,7 @@ class FilterSuiteTestCaseVows(FilterSuiteTestCase):
     	    'test_two (Test_flat)',
         ])
     
-    def test_handles_nested_suite_properly(self):
+    def test_creates_nested_suite_properly(self):
         suite = self.get_suite('nested')
         
         map(suite_str, suite) |should| each_be_equal_to([
@@ -90,7 +90,7 @@ class FilterSuiteTestCaseVows(FilterSuiteTestCase):
                 '<Test_nested_second testMethod=test_three>]>',
         ])
     
-    def test_handles_mixed_suite_properly(self):
+    def test_creates_mixed_suite_properly(self):
         suite = self.get_suite('mixed')
         
         map(suite_str, suite) |should| each_be_equal_to([
@@ -139,7 +139,7 @@ class FlattenSuiteVows(FilterSuiteTestCase):
     	    'test_two (Test_flat)',
         ])
     
-    def test_handles_nested_suite_properly(self):
+    def test_flattens_nested_suite_properly(self):
         suite = self.get_suite('nested')
         
         flattened = flatten_suite(suite)
@@ -151,7 +151,7 @@ class FlattenSuiteVows(FilterSuiteTestCase):
             'test_three (Test_nested_second)',
         ])
     
-    def test_handles_mixed_suite_properly(self):
+    def test_flattens_mixed_suite_properly(self):
         suite = self.get_suite('mixed')
         
         flattened = flatten_suite(suite)
