@@ -3,16 +3,15 @@
 #=============================================================================
 #   test_feature.py --- Wishes feature vows
 #=============================================================================
+import mock
 from should_dsl import should
 
-import mock
-
 from wishes.compat import unittest
-from wishes.feature import StepDefinition, step, world, World
+from wishes.feature import FeatureTest, step, StepDefinition, world, World
 from wishes.loader import load_feature
 
 
-class FeatureTest(unittest.TestCase):
+class FeatureVows(unittest.TestCase):
     
     def setUp(self):
         StepDefinition.clear()
@@ -359,6 +358,21 @@ class FeatureTest(unittest.TestCase):
         result = unittest.TestResult()
         feature.run(result)
         result.testsRun |should| be(2)
+        result.wasSuccessful() |should| be(True)
+    
+    def test_makes_itself_accessible_through_world(self):
+        @step('feature attribute is set to "(.*)"')
+        def feature_attribute(step, name):
+            world.feature |should| be_instance_of(FeatureTest)
+            world.feature.__class__.__name__ |should| be_equal_to(name)
+        feature = load_feature('''
+        Feature: accessible through world
+          Scenario: test
+            Then the feature attribute is set to "Feature_accessible_through_world"
+        ''')
+        result = unittest.TestResult()
+        feature.run(result)
+        result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
 
 

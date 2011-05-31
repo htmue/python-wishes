@@ -10,20 +10,20 @@ import threading
 __unittest = True
 
 class World(threading.local):
-    pass
+    def __init__(self, feature=None):
+        self.feature = feature
 
 world = World()
 
 
 class FeatureTest(object):
     scenarios = dict()
-    World = World
     
     def runTest(self):
         if self.is_empty:
             self.skipTest('no scenarios defined')
         global world
-        world = self.World()
+        world = getattr(self, 'World', World)(self)
         self.scenario.run(self)
     
     def run(self, result=None):
