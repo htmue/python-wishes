@@ -6,7 +6,7 @@
 from should_dsl import should
 
 from wishes.compat import unittest
-from wishes.feature import Step, step, StepDefinition, world, Hashes
+from wishes.feature import Step, step, StepDefinition, world, Hashes, World
 
 
 class StepTest(unittest.TestCase):
@@ -33,6 +33,7 @@ class StepTest(unittest.TestCase):
         def there_is_a_step(step):
             world.run_count += 1
         step_ = Step('Given', 'there is a step')
+        world = World()
         world.run_count = 0
         step_.run()
         world.run_count |should| be(1)

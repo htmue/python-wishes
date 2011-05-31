@@ -10,21 +10,23 @@ import threading
 __unittest = True
 
 class World(threading.local):
-    def _clear(self):
-        self.__dict__.clear()
+    pass
 
 world = World()
 
+
 class FeatureTest(object):
     scenarios = dict()
+    World = World
     
     def runTest(self):
         if self.is_empty:
             self.skipTest('no scenarios defined')
+        global world
+        world = self.World()
         self.scenario.run(self)
     
     def run(self, result=None):
-        world._clear()
         self.result = result
         super(FeatureTest, self).run(result)
     
@@ -47,7 +49,6 @@ class FeatureTest(object):
     def add_scenario(cls, methodName, scenario):
         setattr(cls, methodName, cls.runTest)
         cls.scenarios[methodName] = scenario
-
 
 
 def fill_from_example(string, example):
@@ -270,6 +271,7 @@ class StepDefinition(object):
         return self.pattern.search(s)
     
     def __call__(self, step):
+        self.definition.func_globals['world'] = world
         self.definition(step, *step.match.groups())
 
 
