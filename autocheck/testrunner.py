@@ -176,11 +176,11 @@ class TestResult(unittest.TestResult):
             self.stream.writeln('%s: %s' % (flavour, self.getDescription(test)), colour=colour)
             self.stream.writeln(self.separator2)
             self.stream.writeln('%s' % err, colour=colour)
-
+    
     
     def _add_result(self, test, status):
         if self.database is not None:
-            self.results.append((str(test), self.time_started, self.now(), status))
+            self.results.append((test, self.time_started, self.now(), status))
     
     def _specify(self, test):
         if test._testMethodName.startswith('test_'):
@@ -343,16 +343,11 @@ class TestProgram(unittest.TestProgram):
     def runTests(self):
         if self.catchbreak:
             unittest.installHandler()
-        if self.database is None:
-            tests, full_suite = self.test, True
-        else:
-            failures = self.database.failures()
-            tests = filter_suite(self.test, failures)
-            full_suite = tests is self.test
+        tests_to_run, full_suite = filter_suite(self.test, self.database)
         testRunner = self.testRunner(verbosity=self.verbosity,
             failfast=self.failfast, buffer=self.buffer,
             database=self.database, full_suite=full_suite)
-        self.result = testRunner.run(tests)
+        self.result = testRunner.run(tests_to_run)
         if self.exit:
             sys.exit(not self.result.wasSuccessful())
 

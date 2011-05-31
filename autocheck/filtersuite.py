@@ -17,12 +17,17 @@ def flatten_suite(suite):
     return unittest.TestSuite(flatten(suite))
 
 
-def filter_suite(suite, failures):
-    flattened = flatten_suite(suite)
-    if not failures:
-        return suite
-    failed_tests = [test for test in flattened if str(test) in failures]
-    return unittest.TestSuite(failed_tests) if failed_tests else suite
+def filter_suite(suite, database):
+    full_suite = True
+    if database is not None:
+        flattened = flatten_suite(suite)
+        candidates = database.candidates(flattened)
+        if candidates:
+            tests_to_run = [test for test in flattened if str(test) in candidates]
+            if tests_to_run:
+                suite = unittest.TestSuite(tests_to_run)
+                full_suite = False
+    return suite, full_suite
 
 
 #.............................................................................

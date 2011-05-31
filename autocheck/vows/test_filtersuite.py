@@ -6,6 +6,7 @@
 import os.path
 import re
 
+import mock
 import yaml
 from should_dsl import should
 
@@ -168,36 +169,59 @@ class FlattenSuiteVows(FilterSuiteTestCase):
         ])
 
 
+@mock.patch('autocheck.db.Database')
 class FilterSuiteVows(FilterSuiteTestCase):
     
-    def test_returns_TestSuite_instance(self):
-        suite = self.get_suite('empty')
+    def test_returns_TestSuite_instance(self, Database):
+        suite = self.get_suite('flat')
+        candidates = map(str, suite)[:1]
+        db = Database()
+        db.candidates = mock.Mock('candidates', return_value=set(candidates))
         
-        filtered = filter_suite(suite, set())
+        filtered, full_suite = filter_suite(suite, db)
         
         filtered |should| be_instance_of(unittest.TestSuite)
     
-    def test_returns_all_tests_when_failures_empty(self):
+    def test_returns_all_tests_when_there_is_no_database(self, Database):
         suite = self.get_suite('flat')
         
-        filtered = filter_suite(suite, set())
+        filtered, full_suite = filter_suite(suite, None)
         
-        map(str, filtered) |should| each_be_equal_to(map(str, flatten_suite(suite)))
+        full_suite |should| be(True)
+        map(str, filtered) |should| each_be_equal_to(map(str, suite))
     
-    def test_returns_only_tests_from_failures(self):
+    def test_returns_all_tests_when_candidates_empty(self, Database):
         suite = self.get_suite('flat')
-        failures = ['test_two (%s.Test_flat)' % __name__]
+        candidates = set()
+        db = Database()
+        db.candidates = mock.Mock('candidates', return_value=set())
         
-        filtered = filter_suite(suite, set(failures))
+        filtered, full_suite = filter_suite(suite, db)
         
-        map(str, filtered) |should| each_be_equal_to(failures)
+        full_suite |should| be(True)
+        map(str, filtered) |should| each_be_equal_to(map(str, suite))
     
-    def test_returns_all_tests_when_filtered_empty(self):
+    def test_returns_only_tests_that_are_candidates_if_there_are_candidates(self, Database):
         suite = self.get_suite('flat')
+        candidates = ['test_two (%s.Test_flat)' % __name__]
+        db = Database()
+        db.candidates = mock.Mock('candidates', return_value=set(candidates))
         
-        filtered = filter_suite(suite, set(['unknown']))
+        filtered, full_suite = filter_suite(suite, db)
         
-        map(str, filtered) |should| each_be_equal_to(map(str, flatten_suite(suite)))
+        full_suite |should| be(False)
+        map(str, filtered) |should| each_be_equal_to(candidates)
+    
+    def test_returns_all_tests_when_filtered_empty(self, Database):
+        suite = self.get_suite('flat')
+        candidates = ['unknown']
+        db = Database()
+        db.candidates = mock.Mock('candidates', return_value=set(candidates))
+        
+        filtered, full_suite = filter_suite(suite, db)
+        
+        full_suite |should| be(True)
+        map(str, filtered) |should| each_be_equal_to(map(str, suite))
 
 
 def suite_str(suite):

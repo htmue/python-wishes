@@ -5,6 +5,8 @@
 #=============================================================================
 import datetime
 import functools
+import hashlib
+import inspect
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -37,6 +39,7 @@ class Database(object):
         
         test = '''test(
             name VARCHAR PRIMARY KEY,
+            hash VARCHAR,
             runs INTEGER,
             average_time TIMEDELTA
         )''',
@@ -142,20 +145,21 @@ class Database(object):
         return test
     
     @with_cursor
-    def get_or_create_test(self, cursor, name):
+    def get_or_create_test(self, cursor, test_object):
+        name = str(test_object)
         try:
             test = self.get_test(name, cursor=cursor)
         except TestDoesNotExist:
-            cursor.execute('INSERT INTO test(name,runs,average_time) VALUES (?,?,?)',
-                (name,0,None))
+            cursor.execute('INSERT INTO test(name,hash,runs,average_time) VALUES (?,?,?,?)',
+                (name,source_hash(test_object),0,0))
             test = self.get_test(name, cursor=cursor)
         return test
     
     @with_cursor
-    def add_result(self, cursor, name, started, finished, status):
-        test = self.get_or_create_test(name, cursor=cursor)
+    def add_result(self, cursor, test_object, started, finished, status):
+        test = self.get_or_create_test(test_object, cursor=cursor)
         cursor.execute('INSERT INTO result(run_id,name,started,finished,status) VALUES (?,?,?,?,?)',
-            (self.current_run_id, name, started, finished, status))
+            (self.current_run_id, test['name'], started, finished, status))
         runs = test['runs'] + 1
         average_time = test['average_time']
         if status == ok.key:
@@ -164,13 +168,13 @@ class Database(object):
             else:
                 total_time = average_time * (runs - 1) + (finished - started)
                 average_time = total_time / runs
-        cursor.execute('UPDATE test SET runs=?,average_time=? WHERE name=?',
-            (runs, average_time, name))
+        cursor.execute('UPDATE test SET runs=?,hash=?,average_time=? WHERE name=?',
+            (runs, source_hash(test_object), average_time, str(test_object)))
     
     @with_cursor
     def add_results(self, cursor, results):
-        for name, started, finished, status in results:
-            self.add_result(name, started, finished, status, cursor=cursor)
+        for test_object, started, finished, status in results:
+            self.add_result(test_object, started, finished, status, cursor=cursor)
     
     @with_cursor
     def get_last_result(self, cursor, name):
@@ -264,6 +268,24 @@ class Database(object):
             return set()
     
     @with_cursor
+    def source_has_changed(self, cursor, test_object):
+        new_hash = source_hash(test_object)
+        try:
+            return self.get_test(str(test_object), cursor=cursor)['hash'] != new_hash
+        except TestDoesNotExist:
+            return True
+    
+    @with_cursor
+    def collect_changes(self, cursor, tests):
+        for test_object in tests:
+            if self.source_has_changed(test_object, cursor=cursor):
+                yield str(test_object)
+    
+    @with_cursor
+    def candidates(self, cursor, tests):
+        return self.failures(cursor=cursor) | set(self.collect_changes(tests, cursor=cursor))
+    
+    @with_cursor
     def should_run_again(self, cursor):
         last, successful, full = self.get_last_run_ids(cursor=cursor)
         if last is None:
@@ -281,6 +303,11 @@ class Database(object):
         cursor.execute('DELETE FROM result WHERE finished<(SELECT started FROM run WHERE id=?)', (run_id,))
         cursor.execute('DELETE FROM run WHERE (SELECT count(*) FROM result WHERE run_id=run.id)=0')
 
+
+def source_hash(test_object):
+    test_method = getattr(test_object, test_object._testMethodName)
+    source = inspect.getsource(test_method)
+    return hashlib.sha1(source).hexdigest()
 
 def timedelta_to_float(delta):
     if hasattr(delta, 'total_seconds'):
