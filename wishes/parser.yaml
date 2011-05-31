@@ -13,6 +13,7 @@ states:
   - [scenario, [start_scenario], scenario]
   - [background, [start_background], background]
   - [outline, [start_outline], outline]
+  - [tags, [tags], after_tags]
   - [feature_description, [start_feature_description, data], feature_description]
   - [null, [finish_feature], null]
 
@@ -22,6 +23,10 @@ states:
   - [outline, [finish_feature_description, start_outline], outline]
   - [feature_description, [data], feature_description]
   - [null, [finish_feature_description, finish_feature], null]
+
+  after_tags:
+  - [scenario, [start_scenario], scenario]
+  - [tags, [tags], after_tags]
 
   scenario:
   - [step, [start_step], step]
@@ -120,6 +125,7 @@ patterns:
   multiline: '(\s*""")'
   multiline_data: '(.*)'
   hash: '\s*\|(.*)'
+  tags: '\s*((@[\w_]+\s*)+)'
   whitespace: '(\s*)$'
 
 #.............................................................................

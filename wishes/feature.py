@@ -22,16 +22,41 @@ class FeatureTest(object):
     def runTest(self):
         if self.is_empty:
             self.skipTest('no scenarios defined')
+        if not self.tags_accepted(self.scenario.tags):
+            self.skipTest('by tags')
         global world
         world = getattr(self, 'World', World)(self)
         self.scenario.run(self)
     
     def run(self, result=None):
         self.result = result
+        self.current_tags = getattr(result, 'tags', None)
         super(FeatureTest, self).run(result)
     
     def shortDescription(self):
         return 'Scenario: %s' % self.scenario.title
+    
+    def tags_accepted(self, tags):
+        if self._tags is None:
+            return True
+        if tags is None:
+            return bool(self._tags_exclude and not self._tags_include)
+        include = self._tags_include & tags
+        exclude = self._tags_exclude & tags
+        return bool(include and not exclude)
+    
+    @property
+    def current_tags(self):
+        return self._tags
+    
+    @current_tags.setter
+    def current_tags(self, tags):
+        if tags is None:
+            self._tags = self._tags_include = self._tags_exclude = None
+        else:
+            self._tags = tags
+            self._tags_exclude = set(tag for tag in tags if tag.startswith('~'))
+            self._tags_include = set(tags) - self._tags_exclude
     
     @property
     def is_empty(self):
@@ -99,8 +124,9 @@ class Hashes(object):
 
 class Scenario(object):
     
-    def __init__(self, title=None, background=None, outline=None):
+    def __init__(self, title=None, background=None, outline=None, tags=None):
         self.background = background
+        self.tags = tags
         if outline is not None:
             self.outline, self.example = outline
             background_outline = self.outline.background

@@ -699,11 +699,51 @@ callbacks:
     - [finish_parse, [], {}]
 
 
+  parses scenario Tag:
+    tested_events:
+    - [feature, tags]
+    
+    input: |
+      Feature: Parse scenario Tag
+        @a_tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse scenario Tag], {}]
+    - [tags, [a_tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses scenario Tags:
+    tested_events:
+    - [after_tags, tags]
+    
+    input: |
+      Feature: Parse scenario Tag
+        @tag_1 @tag_2
+        @tag_3
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse scenario Tag], {}]
+    - [tags, [tag_1, tag_2], {}]
+    - [tags, [tag_3], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
   contains untested events:
     tested_events: # untested
     - [background, outline]
-    - [background_hash, null]
     - [background_hash, hash]
+    - [background_hash, null]
     - [background_hash, outline]
     - [background_hash, scenario]
     - [background_hash, step]
@@ -713,16 +753,19 @@ callbacks:
     - [background_step, step]
     - [examples, null]
     - [examples_hash, examples]
+    - [after_tags, background]
+    - [after_tags, outline]
+    - [after_tags, scenario]
     - [feature_description, outline]
     - [hash, background]
     - [hash, outline]
     - [hash, scenario]
     - [hash, step]
-    - [outline, null]
     - [outline, examples]
-    - [outline_hash, null]
+    - [outline, null]
     - [outline_hash, examples]
     - [outline_hash, hash]
+    - [outline_hash, null]
     - [outline_hash, step]
     - [outline_multiline, multiline_data]
     - [outline_multiline, multiline_end]
@@ -734,6 +777,18 @@ callbacks:
   
 
 unreachable transitions:
+  - [after_tags, background]
+  - [after_tags, background_hash]
+  - [after_tags, background_step]
+  - [after_tags, examples]
+  - [after_tags, examples_hash]
+  - [after_tags, feature]
+  - [after_tags, feature_description]
+  - [after_tags, multiline]
+  - [after_tags, outline_multiline]
+  - [after_tags, outline_step]
+  - [after_tags, start]
+  - [after_tags, step]
   - [background, examples_hash]
   - [background, outline_multiline]
   - [background_hash, background]
@@ -743,6 +798,7 @@ unreachable transitions:
   - [background_hash, outline_multiline]
   - [background_hash, start]
   - [background_hash, step]
+  - [background_multiline, after_tags]
   - [background_multiline, background]
   - [background_multiline, background_hash]
   - [background_multiline, examples]
@@ -782,6 +838,7 @@ unreachable transitions:
   - [feature_description, outline_step]
   - [feature_description, start]
   - [feature_description, step]
+  - [hash, after_tags]
   - [hash, background_hash]
   - [hash, background_step]
   - [hash, examples]
@@ -798,6 +855,7 @@ unreachable transitions:
   - [multiline, examples]
   - [multiline, examples_hash]
   - [multiline, outline_multiline]
+  - [outline, after_tags]
   - [outline, background]
   - [outline, background_hash]
   - [outline, background_step]
@@ -809,6 +867,7 @@ unreachable transitions:
   - [outline, outline_multiline]
   - [outline, start]
   - [outline, step]
+  - [outline_hash, after_tags]
   - [outline_hash, background]
   - [outline_hash, background_hash]
   - [outline_hash, background_step]
@@ -830,6 +889,7 @@ unreachable transitions:
   - [outline_step, multiline]
   - [outline_step, start]
   - [outline_step, step]
+  - [scenario, after_tags]
   - [scenario, background_hash]
   - [scenario, background_step]
   - [scenario, examples]

@@ -43,6 +43,7 @@ class Handler(object):
         self.background = None
         self.multilines = None
         self.hashes = None
+        self.pending_tags = None
     
     def finish_feature(self):
         self.suite = unittest.defaultTestLoader.loadTestsFromTestCase(self.Feature)
@@ -56,7 +57,8 @@ class Handler(object):
     
     def start_scenario(self, title):
         self.scenario_method = self.make_scenario_method_name(title)
-        self.scenario = self.Scenario(title, self.background)
+        self.scenario = self.Scenario(title, self.background, tags=self.pending_tags)
+        self.pending_tags = None
     
     def finish_scenario(self):
         self.Feature.add_scenario(self.scenario_method, self.scenario)
@@ -117,6 +119,12 @@ class Handler(object):
     def data(self, data):
         if self.lines is not None:
             self.lines.append(data)
+    
+    def tags(self, *tags):
+        if self.pending_tags is None:
+            self.pending_tags = set(tags)
+        else:
+            self.pending_tags |= set(tags)
     
     def whitespace(self, data):
         self.data(data)

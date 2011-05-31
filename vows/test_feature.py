@@ -39,9 +39,9 @@ class FeatureVows(unittest.TestCase):
         my_world.another_step = False
         my_world.steps_afterwards = False
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         len(result.skipped) |should| be(1)
         result.skipped[0][1] |should| start_with('pending 1 step(s):')
         run = my_world.there_is_a_step, my_world.another_step, my_world.steps_afterwards
@@ -67,9 +67,9 @@ class FeatureVows(unittest.TestCase):
         my_world.background_step = 0
         my_world.steps_run = []
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
         my_world.background_step |should| be(2)
@@ -98,9 +98,9 @@ class FeatureVows(unittest.TestCase):
         my_world = World()
         my_world.steps_run = []
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
         my_world.steps_run |should| be_equal_to([1, 2])
@@ -119,9 +119,9 @@ class FeatureVows(unittest.TestCase):
         ''')
         world.multiline = None
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
         world.multiline |should| be_equal_to('multiline content\n')
@@ -140,9 +140,9 @@ class FeatureVows(unittest.TestCase):
         ''')
         world.hashes = None
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
         list(world.hashes) |should| each_be_equal_to([
@@ -169,9 +169,9 @@ class FeatureVows(unittest.TestCase):
         ''')
         world.hashes = None
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
         world.hashes |should| each_be_equal_to([
@@ -195,9 +195,9 @@ class FeatureVows(unittest.TestCase):
         my_world = World()
         my_world.run = []
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
         my_world.run |should| each_be_equal_to([
@@ -224,9 +224,9 @@ class FeatureVows(unittest.TestCase):
         my_world = World()
         my_world.run = []
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
         my_world.run |should| each_be_equal_to([
@@ -252,9 +252,9 @@ class FeatureVows(unittest.TestCase):
         my_world = World()
         my_world.run = []
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
         my_world.run |should| each_be_equal_to([
@@ -280,9 +280,9 @@ class FeatureVows(unittest.TestCase):
         my_world = World()
         my_world.run = []
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
         my_world.run |should| each_be_equal_to([
@@ -293,9 +293,9 @@ class FeatureVows(unittest.TestCase):
         result = unittest.TestResult()
         for handler in ['startStep', 'stopStep'] + list(handlers):
             setattr(result, handler, mock.Mock(handler))
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(1)
         result.startStep.call_count |should| be(1)
         result.stopStep.call_count |should| be(1)
@@ -378,9 +378,9 @@ class FeatureVows(unittest.TestCase):
             Then I check that world var
         ''')
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
     
@@ -395,12 +395,12 @@ class FeatureVows(unittest.TestCase):
             Then the feature attribute is set to "Feature_accessible_through_world"
         ''')
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
-
+    
     def test_can_provide_custom_world_class(self):
         class MyWorld(World):
             pass
@@ -415,11 +415,101 @@ class FeatureVows(unittest.TestCase):
             Then world is an instance of the MyWorld class
         ''', test_case_class=MyFeature)
         result = unittest.TestResult()
-
+        
         feature.run(result)
-
+        
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
+    
+    def test_can_detect_missing_tags(self):
+        feature = FeatureTest()
+        feature.current_tags = set(['tag'])
+        
+        feature.tags_accepted(None) |should| be(False)
+    
+    def test_can_detect_missing_current_tags(self):
+        feature = FeatureTest()
+        feature.current_tags = set()
+        
+        feature.tags_accepted(set(['tag'])) |should| be(False)
+    
+    def test_can_detect_negated_current_tag(self):
+        feature = FeatureTest()
+        feature.current_tags = set(['~tag'])
+        
+        feature.tags_accepted(set(['tag'])) |should| be(False)
+    
+    def test_can_detect_missing_negated_current_tag(self):
+        feature = FeatureTest()
+        feature.current_tags = set(['~tag'])
+        
+        feature.tags_accepted(None) |should| be(True)
+    
+    def test_skips_scenarios_with_tag_that_is_not_set(self):
+        @step('some step')
+        def some_step(step):
+            pass
+        feature = load_feature('''
+        Feature: skip tagged scenario
+          @tag
+          Scenario: with a step
+            Given there is some step
+        ''')
+        result = unittest.TestResult()
+        result.tags = set()
+        
+        feature.run(result)
+        
+        len(result.skipped) |should| be(1)
+    
+    def test_skips_scenarios_without_tag(self):
+        @step('some step')
+        def some_step(step):
+            pass
+        feature = load_feature('''
+        Feature: skip tagged scenario
+          Scenario: with a step
+            Given there is some step
+        ''')
+        result = unittest.TestResult()
+        result.tags = set(['tag'])
+        
+        feature.run(result)
+        
+        len(result.skipped) |should| be(1)
+    
+    def test_skips_scenarios_with_negated_tag(self):
+        @step('some step')
+        def some_step(step):
+            pass
+        feature = load_feature('''
+        Feature: skip tagged scenario
+          @tag
+          Scenario: with a step
+            Given there is some step
+        ''')
+        result = unittest.TestResult()
+        result.tags = set(['~tag'])
+        
+        feature.run(result)
+        
+        len(result.skipped) |should| be(1)
+    
+    def test_does_not_skip_scenario_without_tag_with_negated_tag(self):
+        @step('some step')
+        def some_step(step):
+            pass
+        feature = load_feature('''
+        Feature: skip tagged scenario
+          Scenario: with a step
+            Given there is some step
+        ''')
+        result = unittest.TestResult()
+        result.tags = set(['~tag'])
+        
+        feature.run(result)
+        
+        len(result.skipped) |should| be(0)
 
 
 #.............................................................................

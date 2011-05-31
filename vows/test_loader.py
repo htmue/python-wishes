@@ -166,7 +166,17 @@ class LoaderVows(unittest.TestCase):
         ''')
         test_case = iter(feature).next()
         test_case.description |should| be_equal_to('With description')
-        
+    
+    def test_stores_tags_with_scenario(self):
+        feature = loader.load_feature('''
+        Feature: skip tagged scenario
+          @tag
+          Scenario: with a step
+            Given there is some step
+        ''')
+        test_case = iter(feature).next()
+        tags = test_case.scenario.tags
+        list(tags) |should| each_be_equal_to(['tag'])
 
 #.............................................................................
 #   test_loader.py
