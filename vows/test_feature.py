@@ -19,13 +19,13 @@ class FeatureVows(unittest.TestCase):
     def test_can_run_feature(self):
         @step('there is a step')
         def there_is_a_step(step):
-            world.there_is_a_step = True
+            my_world.there_is_a_step = True
         @step('another step')
         def another_step(step):
-            world.another_step = True
+            my_world.another_step = True
         @step('steps afterwards')
         def steps_afterwards(step):
-            world.steps_afterwards = True
+            my_world.steps_afterwards = True
         feature = load_feature('''
         Feature: run a feature
           Scenario: some steps
@@ -34,24 +34,26 @@ class FeatureVows(unittest.TestCase):
             When I add something undefined
             Then steps afterwards are not run
         ''')
-        world = World()
-        world.there_is_a_step = False
-        world.another_step = False
-        world.steps_afterwards = False
+        my_world = World()
+        my_world.there_is_a_step = False
+        my_world.another_step = False
+        my_world.steps_afterwards = False
         result = unittest.TestResult()
+
         feature.run(result)
+
         len(result.skipped) |should| be(1)
         result.skipped[0][1] |should| start_with('pending 1 step(s):')
-        run = world.there_is_a_step, world.another_step, world.steps_afterwards
+        run = my_world.there_is_a_step, my_world.another_step, my_world.steps_afterwards
         run |should| be_equal_to((True, True, False))
     
     def test_can_run_feature_with_background(self):
         @step('background step')
         def background_step(step):
-            world.background_step += 1
+            my_world.background_step += 1
         @step('scenario step ([0-9]+)')
         def scenario_step_number(step, number):
-            world.steps_run.append(int(number))
+            my_world.steps_run.append(int(number))
         feature = load_feature('''
         Feature: with background
           Background: present
@@ -61,25 +63,27 @@ class FeatureVows(unittest.TestCase):
           Scenario: with background 2
             And a scenario step 2
         ''')
-        world = World()
-        world.background_step = 0
-        world.steps_run = []
+        my_world = World()
+        my_world.background_step = 0
+        my_world.steps_run = []
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
-        world.background_step |should| be(2)
-        world.steps_run |should| be_equal_to([1, 2])
+        my_world.background_step |should| be(2)
+        my_world.steps_run |should| be_equal_to([1, 2])
     
     
     def test_can_run_feature_with_multiple_backgrounds(self):
         @step('background step ([0-9]+)')
         def background_step_number(step, number):
-            world.background_number = number
+            my_world.background_number = number
         @step('scenario step ([0-9]+)')
         def scenario_step_number(step, number):
-            world.background_number |should| be_equal_to(number)
-            world.steps_run.append(int(number))
+            my_world.background_number |should| be_equal_to(number)
+            my_world.steps_run.append(int(number))
         feature = load_feature('''
         Feature: with background
           Background: 1 present
@@ -91,13 +95,15 @@ class FeatureVows(unittest.TestCase):
           Scenario: with background 2
             And a scenario step 2
         ''')
-        world = World()
-        world.steps_run = []
+        my_world = World()
+        my_world.steps_run = []
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
-        world.steps_run |should| be_equal_to([1, 2])
+        my_world.steps_run |should| be_equal_to([1, 2])
     
     def test_can_run_feature_with_multiline_step(self):
         @step('multiline step')
@@ -113,7 +119,9 @@ class FeatureVows(unittest.TestCase):
         ''')
         world.multiline = None
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
         world.multiline |should| be_equal_to('multiline content\n')
@@ -132,7 +140,9 @@ class FeatureVows(unittest.TestCase):
         ''')
         world.hashes = None
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
         list(world.hashes) |should| each_be_equal_to([
@@ -159,7 +169,9 @@ class FeatureVows(unittest.TestCase):
         ''')
         world.hashes = None
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
         world.hashes |should| each_be_equal_to([
@@ -170,7 +182,7 @@ class FeatureVows(unittest.TestCase):
     def test_can_run_feature_with_scenario_outline_and_examples(self):
         @step('a (.*) with (.*)')
         def a_key_with_value(step, key, value):
-            world.run.append((key, value))
+            my_world.run.append((key, value))
         feature = load_feature('''
         Feature: with multiline scenarnio
           Scenario Outline: follows
@@ -180,13 +192,15 @@ class FeatureVows(unittest.TestCase):
             | key 1 | value 1   |
             | key 2 | value 2   |
         ''')
-        world = World()
-        world.run = []
+        my_world = World()
+        my_world.run = []
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
-        world.run |should| each_be_equal_to([
+        my_world.run |should| each_be_equal_to([
             ('key 1', 'value 1'),
             ('key 2', 'value 2'),
         ])
@@ -194,7 +208,7 @@ class FeatureVows(unittest.TestCase):
     def test_can_run_feature_with_scenario_outline_with_multiline(self):
         @step('a multiline')
         def a_multiline(step):
-            world.run.append(step.multiline)
+            my_world.run.append(step.multiline)
         feature = load_feature('''
         Feature: with multiline scenarnio
           Scenario Outline: follows
@@ -207,13 +221,15 @@ class FeatureVows(unittest.TestCase):
             | first         |
             | second        |
         ''')
-        world = World()
-        world.run = []
+        my_world = World()
+        my_world.run = []
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
-        world.run |should| each_be_equal_to([
+        my_world.run |should| each_be_equal_to([
             'with first\n',
             'with second\n',
         ])
@@ -221,7 +237,7 @@ class FeatureVows(unittest.TestCase):
     def test_can_run_feature_with_scenario_outline_with_hashes(self):
         @step('a hash')
         def a_hash(step):
-            world.run.append(list(step.hashes))
+            my_world.run.append(list(step.hashes))
         feature = load_feature('''
         Feature: with multiline scenarnio
           Scenario Outline: follows
@@ -233,13 +249,15 @@ class FeatureVows(unittest.TestCase):
             | key   | first         |
             | but   | second        |
         ''')
-        world = World()
-        world.run = []
+        my_world = World()
+        my_world.run = []
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
-        world.run |should| each_be_equal_to([
+        my_world.run |should| each_be_equal_to([
             [dict(key='the', value='first')],
             [dict(but='the', value='second')],
         ])
@@ -247,7 +265,7 @@ class FeatureVows(unittest.TestCase):
     def test_can_run_feature_with_scenario_outline_with_background(self):
         @step('a (.*)')
         def a_something(step, value):
-            world.run.append(value)
+            my_world.run.append(value)
         feature = load_feature('''
         Feature: with multiline scenarnio
           Background: with placeholder
@@ -259,13 +277,15 @@ class FeatureVows(unittest.TestCase):
             | first         |
             | second        |
         ''')
-        world = World()
-        world.run = []
+        my_world = World()
+        my_world.run = []
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
-        world.run |should| each_be_equal_to([
+        my_world.run |should| each_be_equal_to([
             'first', 'step', 'second', 'step',
         ])
     
@@ -273,7 +293,9 @@ class FeatureVows(unittest.TestCase):
         result = unittest.TestResult()
         for handler in ['startStep', 'stopStep'] + list(handlers):
             setattr(result, handler, mock.Mock(handler))
+
         feature.run(result)
+
         result.testsRun |should| be(1)
         result.startStep.call_count |should| be(1)
         result.stopStep.call_count |should| be(1)
@@ -356,7 +378,9 @@ class FeatureVows(unittest.TestCase):
             Then I check that world var
         ''')
         result = unittest.TestResult()
+
         feature.run(result)
+
         result.testsRun |should| be(2)
         result.wasSuccessful() |should| be(True)
     
@@ -371,7 +395,29 @@ class FeatureVows(unittest.TestCase):
             Then the feature attribute is set to "Feature_accessible_through_world"
         ''')
         result = unittest.TestResult()
+
         feature.run(result)
+
+        result.testsRun |should| be(1)
+        result.wasSuccessful() |should| be(True)
+
+    def test_can_provide_custom_world_class(self):
+        class MyWorld(World):
+            pass
+        class MyFeature(unittest.TestCase):
+            World = MyWorld
+        @step('world is an instance of the MyWorld class')
+        def world_is_instance_of(step):
+            world |should| be_instance_of(MyWorld)
+        feature = load_feature('''
+        Feature: custom world class
+          Scenario: test
+            Then world is an instance of the MyWorld class
+        ''', test_case_class=MyFeature)
+        result = unittest.TestResult()
+
+        feature.run(result)
+
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
 
