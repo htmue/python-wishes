@@ -9,7 +9,7 @@ from wishes.compat import unittest
 from wishes.feature import Step, step, StepDefinition, world, Hashes, World
 
 
-class StepTest(unittest.TestCase):
+class StepVows(unittest.TestCase):
     
     def setUp(self):
         StepDefinition.clear()
@@ -73,7 +73,7 @@ class StepTest(unittest.TestCase):
         step_ |should| be_defined
 
 
-class HashesTest(unittest.TestCase):
+class HashesVows(unittest.TestCase):
     
     def test_returns_dicts_that_map_values_to_given_keys_when_iterated(self):
         hash = Hashes(('first', 'second'), [

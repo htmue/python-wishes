@@ -12,7 +12,7 @@ from wishes.compat import unittest
 from wishes.feature import Scenario, step, StepDefinition, world, StepDefinitionError
 
 
-class ScenarioTest(unittest.TestCase):
+class ScenarioVows(unittest.TestCase):
     
     def setUp(self):
         StepDefinition.clear()

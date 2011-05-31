@@ -12,7 +12,7 @@ from wishes.compat import unittest
 from wishes.feature import Scenario
 
 
-class LoaderTest(unittest.TestCase):
+class LoaderVows(unittest.TestCase):
     
     def test_returns_TestSuite_object(self):
         feature = loader.load_feature('Feature:')
