@@ -11,6 +11,7 @@ import status
 from colorizer import ColourWritelnDecorator, ColourScheme
 from compat import unittest
 from filtersuite import filter_suite
+from tagexpression import TagExpression
 
 
 try:
@@ -335,14 +336,36 @@ class TestProgram(unittest.TestProgram):
                     exit=True, verbosity=1, failfast=None, catchbreak=None,
                     buffer=None, database=None):
         self.database = database
+        self.run_tags = None
         super(TestProgram, self).__init__(module=module, defaultTest=defaultTest,
             argv=argv, testRunner=testRunner, testLoader=testLoader, exit=exit,
             verbosity=verbosity, failfast=failfast, catchbreak=catchbreak,
             buffer=buffer)
     
+    def parseArgs(self, argv):
+        new_args = []
+        i = 0
+        while i < len(argv):
+            arg = argv[i]
+            if arg.startswith('--tags'):
+                if self.run_tags is None:
+                    self.run_tags = TagExpression()
+                if arg.startswith('--tags='):
+                    arg = arg[7:]
+                else:
+                    i += 1
+                    arg = argv[i]
+                self.run_tags.parse_and_add(arg)
+            else:
+                new_args.append(arg)
+            i += 1
+        super(TestProgram, self).parseArgs(new_args)
+    
     def runTests(self):
         if self.catchbreak:
             unittest.installHandler()
+        if self.run_tags is not None:
+            self.test = self.run_tags.filter_suite(self.test)
         tests_to_run, full_suite = filter_suite(self.test, self.database)
         testRunner = self.testRunner(verbosity=self.verbosity,
             failfast=self.failfast, buffer=self.buffer,
