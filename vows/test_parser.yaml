@@ -699,6 +699,39 @@ callbacks:
     - [finish_parse, [], {}]
 
 
+  parses feature Tag:
+    tested_events:
+    - [start, tags]
+    
+    input: |
+      @a_tag
+      Feature: Parse feature Tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [tags, [a_tag], {}]
+    - [start_feature, [Parse feature Tag], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses feature Tags:
+    tested_events: []
+    
+    input: |
+      @tag_1 @tag_2
+      @tag_3
+      Feature: Parse feature Tags
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [tags, [tag_1, tag_2], {}]
+    - [tags, [tag_3], {}]
+    - [start_feature, [Parse feature Tags], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
   parses scenario Tag:
     tested_events:
     - [feature, tags]
@@ -723,14 +756,14 @@ callbacks:
     - [after_tags, tags]
     
     input: |
-      Feature: Parse scenario Tag
+      Feature: Parse scenario Tags
         @tag_1 @tag_2
         @tag_3
         Scenario: with tag
 
     callbacks:
     - [start_parse, [<string>], {}]
-    - [start_feature, [Parse scenario Tag], {}]
+    - [start_feature, [Parse scenario Tags], {}]
     - [tags, [tag_1, tag_2], {}]
     - [tags, [tag_3], {}]
     - [start_scenario, [with tag], {}]
@@ -906,7 +939,6 @@ unreachable transitions:
   - [start, examples_hash]
   - [start, multiline]
   - [start, outline_multiline]
-  - [start, start]
   - [start, step]
   - [step, background_step]
   - [step, examples]

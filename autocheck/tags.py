@@ -13,7 +13,8 @@ def tag(*tags):
     return decorator
 
 def add_tags(test_item, tags):
-    return tag(*tags)(test_item)
+    all_tags = tuple(get_tags(test_item) | set(tags))
+    return tag(*all_tags)(test_item)
 
 def get_tags(test_item):
     if isinstance(test_item, unittest.TestCase):

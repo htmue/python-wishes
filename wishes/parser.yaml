@@ -7,6 +7,7 @@
 states:
   start:
   - [feature, [start_feature], feature]
+  - [tags, [tags], start]
   - [null, [], null]
 
   feature:

@@ -7,7 +7,7 @@ import re
 import unicodedata
 
 from compat import unittest
-from feature import FeatureTest, Scenario, Hashes
+from feature import FeatureTest, Scenario, Hashes, add_tags
 from parser import Parser
 
 
@@ -31,6 +31,7 @@ class Handler(object):
         self.feature_name = name
         self.suite = None
         self.lines = None
+        self.pending_tags = None
     
     def finish_parse(self):
         self.Feature = None
@@ -39,11 +40,13 @@ class Handler(object):
         class Feature(FeatureTest, self.TestCase):
             pass
         Feature.__name__ = self.make_feature_name(title)
+        if add_tags is not None and self.pending_tags is not None:
+            add_tags(Feature, self.pending_tags)
+            self.pending_tags = None
         self.Feature = Feature
         self.background = None
         self.multilines = None
         self.hashes = None
-        self.pending_tags = None
     
     def finish_feature(self):
         self.suite = unittest.defaultTestLoader.loadTestsFromTestCase(self.Feature)

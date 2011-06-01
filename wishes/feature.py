@@ -8,9 +8,9 @@ import threading
 
 
 try:
-    from autocheck.tags import add_tags
+    from autocheck.tags import add_tags, get_tags
 except ImportError:
-    add_tags = None
+    add_tags = get_tags = None
 
 __unittest = True
 
