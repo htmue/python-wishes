@@ -22,6 +22,7 @@ states:
   - [scenario, [finish_feature_description, start_scenario], scenario]
   - [background, [finish_feature_description, start_background], background]
   - [outline, [finish_feature_description, start_outline], outline]
+  - [tags, [finish_feature_description, tags], after_tags]
   - [feature_description, [data], feature_description]
   - [null, [finish_feature_description, finish_feature], null]
 
@@ -118,11 +119,19 @@ states:
   - [null, [finish_hash, finish_step, finish_outline, finish_feature], null]
 
   examples:
+  - [scenario, [finish_examples, start_scenario], scenario]
+  - [background, [finish_examples, start_background], background]
+  - [outline, [finish_examples, start_outline], outline]
+  - [examples, [finish_examples, start_examples], examples]
+  - [tags, [finish_examples, tags], after_tags]
   - [hash, [start_hash], examples_hash]
   - [null, [finish_hash, finish_examples, finish_feature], null]
 
   examples_hash:
   - [hash, [hash_line], examples_hash]
+  - [scenario, [finish_hash, finish_examples, start_scenario], scenario]
+  - [background, [finish_hash, finish_examples, start_background], background]
+  - [outline, [finish_hash, finish_examples, start_outline], outline]
   - [examples, [finish_hash, finish_examples, start_examples], examples]
   - [tags, [finish_hash, finish_examples, tags], after_tags]
   - [null, [finish_hash, finish_examples, finish_feature], null]

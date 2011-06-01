@@ -63,7 +63,7 @@ class ParserVows(unittest.TestCase):
               """
         '''.strip())
         parse |should| throw(ParseError)
-
+    
     def test_tested_parsing_events_are_complete(self):
         events, states, matchers = Parser.parser_info()
         tested_events = set()
@@ -74,12 +74,15 @@ class ParserVows(unittest.TestCase):
                 tested_events.add((state, matcher))
         untested_events = events - tested_events
         sorted(untested_events) |should| each_be_equal_to([])
-
+    
     def test_containes_unreachable_transitions(self):
         reachable_transitions, possible_transitions = Parser.parser_transitions()
         unreachable_transitions = possible_transitions - reachable_transitions
-        unreachable_transitions = sorted(list(t) for t in unreachable_transitions)
-        unreachable_transitions |should| each_be_equal_to(test_data['unreachable transitions'])
+        unreachable_transitions = set(t for t in unreachable_transitions)
+        confirmed = set(tuple(t) for t in test_data['unreachable transitions'])
+        non_confirmed = unreachable_transitions - confirmed
+        sorted(non_confirmed) |should| each_be_equal_to([])
+
 
 #.............................................................................
 #   test_parser.py
