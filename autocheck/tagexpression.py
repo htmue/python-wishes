@@ -5,6 +5,10 @@
 #=============================================================================
 import re
 
+from compat import unittest
+from filtersuite import flatten_suite
+from tags import get_tags
+
 
 class TagExpressionParseError(Exception): pass
 
@@ -12,15 +16,23 @@ class TagExpression(object):
     tag_re = re.compile(r'@([\w_]+)$')
     negated_tag_re = re.compile(r'~@([\w_]+)$')
     
-    def __init__(self):
+    def __init__(self, string=None):
         self.groups = None
         self.and_node = None
+        if string:
+            self.parse_and_add(string)
     
     def match(self, value):
         if self.and_node is None:
             return True
         else:
             return self.and_node.match(set(value))
+    
+    def filter_suite(self, suite, testSuiteClass=unittest.TestSuite):
+        return testSuiteClass(
+            test_item for test_item in flatten_suite(suite)
+            if self.match(get_tags(test_item))
+        )
     
     def parse_and_add(self, string):
         if self.and_node is None:
