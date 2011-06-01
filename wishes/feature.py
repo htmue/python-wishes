@@ -113,6 +113,7 @@ class Scenario(object):
     def __init__(self, title=None, background=None, outline=None, tags=None):
         self.background = background
         self.tags = tags
+        self.add_tags_from_parent(background)
         if outline is not None:
             self.outline, self.example = outline
             background_outline = self.outline.background
@@ -123,9 +124,17 @@ class Scenario(object):
                 )
             self.title = fill_from_example(self.outline.title, self.example)
             self.create_steps_from_outline()
+            self.add_tags_from_parent(self.outline)
         else:
             self.title = title
             self.steps = []
+    
+    def add_tags_from_parent(self, parent):
+        if parent is not None and parent.tags is not None:
+            if self.tags is None:
+                self.tags = parent.tags
+            else:
+                self.tags = set(self.tags) | parent.tags
     
     def run(self, feature):
         if not self.steps:

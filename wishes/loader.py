@@ -60,20 +60,22 @@ class Handler(object):
     
     def start_scenario(self, title):
         self.scenario_method = self.make_scenario_method_name(title)
-        self.scenario = self.Scenario(title, self.background, tags=self.pending_tags)
+        self.scenario = self.Scenario(title, background=self.background, tags=self.pending_tags)
         self.pending_tags = None
     
     def finish_scenario(self):
         self.Feature.add_scenario(self.scenario_method, self.scenario)
     
     def start_background(self, title):
-        self.scenario = self.Scenario(title)
+        self.scenario = self.Scenario(title, tags=self.pending_tags)
+        self.pending_tags = None
     
     def finish_background(self):
         self.background = self.scenario
     
     def start_outline(self, title):
-        self.scenario = self.Scenario(title, background=self.background)
+        self.scenario = self.Scenario(title, background=self.background, tags=self.pending_tags)
+        self.pending_tags = None
     
     def finish_outline(self):
         self.outline = self.scenario
@@ -84,11 +86,12 @@ class Handler(object):
     def finish_examples(self):
         self.hashes.fix_keys_for_outline()
         for n, example in enumerate(self.hashes):
-            scenario = self.Scenario(outline=(self.outline, example))
+            scenario = self.Scenario(outline=(self.outline, example), tags=self.pending_tags)
             title = '%s %d %s' % (scenario.title, n + 1, self.examples)
             scenario_method = self.make_scenario_method_name(title)
             self.Feature.add_scenario(scenario_method, scenario)
         self.hashes = None
+        self.pending_tags = None
     
     def start_step(self, kind, statement):
         self.step = kind, statement

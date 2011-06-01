@@ -20,7 +20,8 @@ callbacks:
     - [start, feature]
     - [feature, null]
 
-    input: 'Feature: Parse feature file'
+    input: |
+      Feature: Parse feature file
     callbacks:
     - [start_parse, [<string>], {}]
     - [start_feature, [Parse feature file], {}]
@@ -699,51 +700,51 @@ callbacks:
     - [finish_parse, [], {}]
 
 
-  parses feature Tag:
+  parses feature tag:
     tested_events:
     - [start, tags]
     
     input: |
       @a_tag
-      Feature: Parse feature Tag
+      Feature: Parse feature tag
 
     callbacks:
     - [start_parse, [<string>], {}]
     - [tags, [a_tag], {}]
-    - [start_feature, [Parse feature Tag], {}]
+    - [start_feature, [Parse feature tag], {}]
     - [finish_feature, [], {}]
     - [finish_parse, [], {}]
 
 
-  parses feature Tags:
+  parses feature tags:
     tested_events: []
     
     input: |
       @tag_1 @tag_2
       @tag_3
-      Feature: Parse feature Tags
+      Feature: Parse feature tags
 
     callbacks:
     - [start_parse, [<string>], {}]
     - [tags, [tag_1, tag_2], {}]
     - [tags, [tag_3], {}]
-    - [start_feature, [Parse feature Tags], {}]
+    - [start_feature, [Parse feature tags], {}]
     - [finish_feature, [], {}]
     - [finish_parse, [], {}]
 
 
-  parses scenario Tag:
+  parses scenario tag:
     tested_events:
     - [feature, tags]
     
     input: |
-      Feature: Parse scenario Tag
+      Feature: Parse scenario tag
         @a_tag
         Scenario: with tag
 
     callbacks:
     - [start_parse, [<string>], {}]
-    - [start_feature, [Parse scenario Tag], {}]
+    - [start_feature, [Parse scenario tag], {}]
     - [tags, [a_tag], {}]
     - [start_scenario, [with tag], {}]
     - [finish_scenario, [], {}]
@@ -751,21 +752,337 @@ callbacks:
     - [finish_parse, [], {}]
 
 
-  parses scenario Tags:
+  parses scenario tags:
     tested_events:
     - [after_tags, tags]
     
     input: |
-      Feature: Parse scenario Tags
+      Feature: Parse scenario tags
         @tag_1 @tag_2
         @tag_3
         Scenario: with tag
 
     callbacks:
     - [start_parse, [<string>], {}]
-    - [start_feature, [Parse scenario Tags], {}]
+    - [start_feature, [Parse scenario tags], {}]
     - [tags, [tag_1, tag_2], {}]
     - [tags, [tag_3], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses background tags:
+    tested_events:
+    - [after_tags, background]
+    
+    input: |
+      Feature: Parse background tags
+        @tag_1 @tag_2
+        Background: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse background tags], {}]
+    - [tags, [tag_1, tag_2], {}]
+    - [start_background, [with tag], {}]
+    - [finish_background, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses outline tags:
+    tested_events:
+    - [after_tags, outline]
+    
+    input: |
+      Feature: Parse outline tags
+        @tag_1 @tag_2
+        Scenario Outline: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse outline tags], {}]
+    - [tags, [tag_1, tag_2], {}]
+    - [start_outline, [with tag], {}]
+    - [finish_outline, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses examples tags:
+    tested_events:
+    - [after_tags, examples]
+    
+    input: |
+      Feature: Parse outline tags
+        Scenario Outline: with tag
+        @tag_1 @tag_2
+        Examples: here
+          | is  | step  |
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse outline tags], {}]
+    - [start_outline, [with tag], {}]
+    - [finish_outline, [], {}]
+    - [tags, [tag_1, tag_2], {}]
+    - [start_examples, [here], {}]
+    - [start_hash, [is, step], {}]
+    - [finish_hash, [], {}]
+    - [finish_examples, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after scenario:
+    tested_events:
+    - [scenario, tags]
+    
+    input: |
+      Feature: Parse tags after scenario
+        Scenario: without tags
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after scenario], {}]
+    - [start_scenario, [without tags], {}]
+    - [finish_scenario, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after step:
+    tested_events:
+    - [step, tags]
+    
+    input: |
+      Feature: Parse tags after scenario
+        Scenario: without tags
+          Given a step
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after scenario], {}]
+    - [start_scenario, [without tags], {}]
+    - [start_step, [Given, a step], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after hash:
+    tested_events:
+    - [hash, tags]
+    
+    input: |
+      Feature: Parse tags after scenario
+        Scenario: without tags
+          Given a step
+            | with | a | hash | line |
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after scenario], {}]
+    - [start_scenario, [without tags], {}]
+    - [start_step, [Given, a step], {}]
+    - [start_hash, [with, a, hash, line], {}]
+    - [finish_hash, [], {}]
+    - [finish_step, [], {}]
+    - [finish_scenario, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after background:
+    tested_events:
+    - [background, tags]
+    
+    input: |
+      Feature: Parse tags after background
+        Background: without tags
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after background], {}]
+    - [start_background, [without tags], {}]
+    - [finish_background, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after background step:
+    tested_events:
+    - [background_step, tags]
+    
+    input: |
+      Feature: Parse tags after background
+        Background: without tags
+          Given a step
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after background], {}]
+    - [start_background, [without tags], {}]
+    - [start_step, [Given, a step], {}]
+    - [finish_step, [], {}]
+    - [finish_background, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after background hash:
+    tested_events:
+    - [background_hash, tags]
+    
+    input: |
+      Feature: Parse tags after background
+        Background: without tags
+          Given a step
+            | with | a | hash | line |
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after background], {}]
+    - [start_background, [without tags], {}]
+    - [start_step, [Given, a step], {}]
+    - [start_hash, [with, a, hash, line], {}]
+    - [finish_hash, [], {}]
+    - [finish_step, [], {}]
+    - [finish_background, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after outline:
+    tested_events:
+    - [outline, tags]
+    
+    input: |
+      Feature: Parse tags after outline
+        Scenario Outline: without tags
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after outline], {}]
+    - [start_outline, [without tags], {}]
+    - [finish_outline, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after outline step:
+    tested_events:
+    - [outline_step, tags]
+    
+    input: |
+      Feature: Parse tags after outline
+        Scenario Outline: without tags
+          Given a step
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after outline], {}]
+    - [start_outline, [without tags], {}]
+    - [start_step, [Given, a step], {}]
+    - [finish_step, [], {}]
+    - [finish_outline, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after outline hash:
+    tested_events:
+    - [outline_hash, tags]
+    
+    input: |
+      Feature: Parse tags after outline
+        Scenario Outline: without tags
+          Given a step
+            | with | a | hash | line |
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after outline], {}]
+    - [start_outline, [without tags], {}]
+    - [start_step, [Given, a step], {}]
+    - [start_hash, [with, a, hash, line], {}]
+    - [finish_hash, [], {}]
+    - [finish_step, [], {}]
+    - [finish_outline, [], {}]
+    - [tags, [tag], {}]
+    - [start_scenario, [with tag], {}]
+    - [finish_scenario, [], {}]
+    - [finish_feature, [], {}]
+    - [finish_parse, [], {}]
+
+
+  parses tags after examples hash:
+    tested_events:
+    - [examples_hash, tags]
+    
+    input: |
+      Feature: Parse tags after examples
+        Scenario Outline: without tags
+        Examples: here
+          | is  | step  |
+        @tag
+        Scenario: with tag
+
+    callbacks:
+    - [start_parse, [<string>], {}]
+    - [start_feature, [Parse tags after examples], {}]
+    - [start_outline, [without tags], {}]
+    - [finish_outline, [], {}]
+    - [start_examples, [here], {}]
+    - [start_hash, [is, step], {}]
+    - [finish_hash, [], {}]
+    - [finish_examples, [], {}]
+    - [tags, [tag], {}]
     - [start_scenario, [with tag], {}]
     - [finish_scenario, [], {}]
     - [finish_feature, [], {}]
@@ -810,10 +1127,8 @@ callbacks:
   
 
 unreachable transitions:
-  - [after_tags, background]
   - [after_tags, background_hash]
   - [after_tags, background_step]
-  - [after_tags, examples]
   - [after_tags, examples_hash]
   - [after_tags, feature]
   - [after_tags, feature_description]
@@ -871,7 +1186,6 @@ unreachable transitions:
   - [feature_description, outline_step]
   - [feature_description, start]
   - [feature_description, step]
-  - [hash, after_tags]
   - [hash, background_hash]
   - [hash, background_step]
   - [hash, examples]
@@ -888,7 +1202,6 @@ unreachable transitions:
   - [multiline, examples]
   - [multiline, examples_hash]
   - [multiline, outline_multiline]
-  - [outline, after_tags]
   - [outline, background]
   - [outline, background_hash]
   - [outline, background_step]
@@ -900,7 +1213,6 @@ unreachable transitions:
   - [outline, outline_multiline]
   - [outline, start]
   - [outline, step]
-  - [outline_hash, after_tags]
   - [outline_hash, background]
   - [outline_hash, background_hash]
   - [outline_hash, background_step]
@@ -922,7 +1234,6 @@ unreachable transitions:
   - [outline_step, multiline]
   - [outline_step, start]
   - [outline_step, step]
-  - [scenario, after_tags]
   - [scenario, background_hash]
   - [scenario, background_step]
   - [scenario, examples]
