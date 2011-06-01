@@ -6,6 +6,10 @@
 from functools import partial
 
 from should_dsl import should
+try:
+    from autocheck.tags import get_tags
+except ImportError:
+    get_tags = None
 
 from wishes import loader
 from wishes.compat import unittest
@@ -167,16 +171,30 @@ class LoaderVows(unittest.TestCase):
         test_case = iter(feature).next()
         test_case.description |should| be_equal_to('With description')
     
+    @unittest.skipIf(get_tags is None, 'autocheck.tags:get_tags() not available')
     def test_stores_tags_with_scenario(self):
         feature = loader.load_feature('''
-        Feature: skip tagged scenario
-          @tag
-          Scenario: with a step
-            Given there is some step
+        Feature: scenarios can have tags
+          @tag_1 @tag_2
+          @tag_3
+          Scenario: with tags
         ''')
         test_case = iter(feature).next()
-        tags = test_case.scenario.tags
-        list(tags) |should| each_be_equal_to(['tag'])
+        tags = get_tags(test_case)
+        sorted(tags) |should| each_be_equal_to(['tag_1', 'tag_2', 'tag_3'])
+    
+    @unittest.skipIf(get_tags is None, 'autocheck.tags:get_tags() not available')
+    def test_clears_tags_between_scenarios(self):
+        feature = loader.load_feature('''
+        Feature: scenarios can have tags
+          @tag
+          Scenario: with a tag
+          Scenario: without tags
+        ''')
+        test_case = list(feature)[1]
+        tags = get_tags(test_case)
+        tags |should| be_empty
+
 
 #.............................................................................
 #   test_loader.py

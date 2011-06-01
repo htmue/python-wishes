@@ -12,6 +12,9 @@ def tag(*tags):
         return test_item
     return decorator
 
+def add_tags(test_item, tags):
+    return tag(*tags)(test_item)
+
 def get_tags(test_item):
     if isinstance(test_item, unittest.TestCase):
         try:

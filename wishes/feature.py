@@ -7,6 +7,11 @@ import re
 import threading
 
 
+try:
+    from autocheck.tags import add_tags
+except ImportError:
+    add_tags = None
+
 __unittest = True
 
 class World(threading.local):
@@ -19,11 +24,14 @@ world = World()
 class FeatureTest(object):
     scenarios = dict()
     
+    def __init__(self, *args, **kwargs):
+        super(FeatureTest, self).__init__(*args, **kwargs)
+        if add_tags is not None and not self.is_empty and self.scenario.tags is not None:
+            add_tags(self, self.scenario.tags)
+    
     def runTest(self):
         if self.is_empty:
             self.skipTest('no scenarios defined')
-        if not self.tags_accepted(self.scenario.tags):
-            self.skipTest('by tags')
         global world
         world = getattr(self, 'World', World)(self)
         self.scenario.run(self)
@@ -35,28 +43,6 @@ class FeatureTest(object):
     
     def shortDescription(self):
         return 'Scenario: %s' % self.scenario.title
-    
-    def tags_accepted(self, tags):
-        if self._tags is None:
-            return True
-        if tags is None:
-            return bool(self._tags_exclude and not self._tags_include)
-        include = self._tags_include & tags
-        exclude = self._tags_exclude & tags
-        return bool(include and not exclude)
-    
-    @property
-    def current_tags(self):
-        return self._tags
-    
-    @current_tags.setter
-    def current_tags(self, tags):
-        if tags is None:
-            self._tags = self._tags_include = self._tags_exclude = None
-        else:
-            self._tags = tags
-            self._tags_exclude = set(tag for tag in tags if tag.startswith('~'))
-            self._tags_include = set(tags) - self._tags_exclude
     
     @property
     def is_empty(self):
