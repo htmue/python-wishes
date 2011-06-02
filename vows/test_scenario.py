@@ -137,6 +137,11 @@ class ScenarioVows(unittest.TestCase):
         scenario.add_step('Given', 'there is a step')
         scenario.run(feature)
         feature.skipTest |should| be_called_once_with('pending 1 step(s): [<Given there is a step>]')
+    
+    def test_can_be_created_with_tags(self):
+        tags = ['wip', 'fast']
+        scenario = Scenario('Test scenario', tags=tags)
+        scenario.tags |should| each_be_equal_to(tags)
 
 #.............................................................................
 #   test_scenario.py

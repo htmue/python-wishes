@@ -9,7 +9,7 @@ from should_dsl import should
 
 from wishes import loader
 from wishes.compat import unittest
-from wishes.feature import Scenario
+from wishes.feature import Scenario, get_tags
 
 
 class LoaderVows(unittest.TestCase):
@@ -166,7 +166,132 @@ class LoaderVows(unittest.TestCase):
         ''')
         test_case = iter(feature).next()
         test_case.description |should| be_equal_to('With description')
-        
+
+
+@unittest.skipIf(get_tags is None, 'get_tags() not available')
+class TagLoaderVows(unittest.TestCase):
+    
+    def test_stores_tags_with_feature(self):
+        feature = loader.load_feature('''
+        @tag_1 @tag_2
+        @tag_3
+        Feature: features can have tags
+          Scenario: with tags
+        ''')
+        test_case = iter(feature).next()
+        tags = get_tags(test_case)
+        sorted(tags) |should| each_be_equal_to(['tag_1', 'tag_2', 'tag_3'])
+    
+    def test_stores_tags_with_scenario(self):
+        feature = loader.load_feature('''
+        Feature: features can have tags
+          @tag_1 @tag_2
+          @tag_3
+          Scenario: with tags
+        ''')
+        test_case = iter(feature).next()
+        tags = get_tags(test_case)
+        sorted(tags) |should| each_be_equal_to(['tag_1', 'tag_2', 'tag_3'])
+    
+    def test_clears_tags_between_scenarios(self):
+        feature = loader.load_feature('''
+        Feature: scenarios can have tags
+          @tag
+          Scenario: a) with a tag
+          Scenario: b) without tags
+        ''')
+        test_case = list(feature)[1]
+        tags = get_tags(test_case)
+        tags |should| be_empty
+    
+    def test_mixes_tags_of_feature_and_scenario(self):
+        feature = loader.load_feature('''
+        @feature
+        Feature: scenarios can have tags
+          @scenario
+          Scenario: with tag
+          Scenario: without tags
+        ''')
+        test_cases = list(feature)
+        tags = get_tags(test_cases[0])
+        sorted(tags) |should| each_be_equal_to(['feature', 'scenario'])
+        tags = get_tags(test_cases[1])
+        sorted(tags) |should| each_be_equal_to(['feature'])
+    
+    def test_stores_background_tags_with_scenarios(self):
+        feature = loader.load_feature('''
+        Feature: background can have tags
+          @background
+          Background: with tag
+          Scenario: without tags
+          Scenario: also without tags
+        ''')
+        for test_case in feature:
+            tags = get_tags(test_case)
+            sorted(tags) |should| each_be_equal_to(['background'])
+    
+    def test_mixes_tags_of_background_and_scenario(self):
+        feature = loader.load_feature('''
+        Feature: background can have tags
+          @background
+          Background: with tag
+          Scenario: a) without tags
+          @scenario
+          Scenario: b) with tag
+        ''')
+        test_cases = list(feature)
+        tags = get_tags(test_cases[0])
+        sorted(tags) |should| each_be_equal_to(['background'])
+        tags = get_tags(test_cases[1])
+        sorted(tags) |should| each_be_equal_to(['background', 'scenario'])
+    
+    def test_stores_outline_tags_with_scenarios(self):
+        feature = loader.load_feature('''
+        Feature: outlines can have tags
+          @outline
+          Scenario Outline: with tag
+          Examples:
+          | {a} | {var} |
+          | one | line  |
+          | and | next  |
+        ''')
+        for test_case in feature:
+            tags = get_tags(test_case)
+            sorted(tags) |should| each_be_equal_to(['outline'])
+    
+    def test_stores_examples_tags_with_scenarios(self):
+        feature = loader.load_feature('''
+        Feature: examples can have tags
+          Scenario Outline: with tag
+          @example
+          Examples:
+          | {a} | {var} |
+          | one | line  |
+          | and | next  |
+        ''')
+        for test_case in feature:
+            tags = get_tags(test_case)
+            sorted(tags) |should| each_be_equal_to(['example'])
+    
+    def test_mixes_tags_of_outline_and_examples_group(self):
+        feature = loader.load_feature('''
+        Feature: background can have tags
+          @outline
+          Scenario Outline: with tag
+          Examples: 1
+          | {a} | {var} |
+          | one | line  |
+          @example
+          Examples: 2
+          | {a} | {var} |
+          | and | next  |
+        ''')
+        test_cases = list(feature)
+        tags = get_tags(test_cases[0])
+        sorted(tags) |should| each_be_equal_to(['outline'])
+        tags = get_tags(test_cases[1])
+        sorted(tags) |should| each_be_equal_to(['example', 'outline'])
+
 
 #.............................................................................
 #   test_loader.py

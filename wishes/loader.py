@@ -7,7 +7,7 @@ import re
 import unicodedata
 
 from compat import unittest
-from feature import FeatureTest, Scenario, Hashes
+from feature import FeatureTest, Scenario, Hashes, add_tags
 from parser import Parser
 
 
@@ -31,6 +31,7 @@ class Handler(object):
         self.feature_name = name
         self.suite = None
         self.lines = None
+        self.pending_tags = None
     
     def finish_parse(self):
         self.Feature = None
@@ -39,6 +40,9 @@ class Handler(object):
         class Feature(FeatureTest, self.TestCase):
             pass
         Feature.__name__ = self.make_feature_name(title)
+        if add_tags is not None and self.pending_tags is not None:
+            add_tags(Feature, self.pending_tags)
+            self.pending_tags = None
         self.Feature = Feature
         self.background = None
         self.multilines = None
@@ -56,19 +60,22 @@ class Handler(object):
     
     def start_scenario(self, title):
         self.scenario_method = self.make_scenario_method_name(title)
-        self.scenario = self.Scenario(title, self.background)
+        self.scenario = self.Scenario(title, background=self.background, tags=self.pending_tags)
+        self.pending_tags = None
     
     def finish_scenario(self):
         self.Feature.add_scenario(self.scenario_method, self.scenario)
     
     def start_background(self, title):
-        self.scenario = self.Scenario(title)
+        self.scenario = self.Scenario(title, tags=self.pending_tags)
+        self.pending_tags = None
     
     def finish_background(self):
         self.background = self.scenario
     
     def start_outline(self, title):
-        self.scenario = self.Scenario(title, background=self.background)
+        self.scenario = self.Scenario(title, background=self.background, tags=self.pending_tags)
+        self.pending_tags = None
     
     def finish_outline(self):
         self.outline = self.scenario
@@ -79,11 +86,12 @@ class Handler(object):
     def finish_examples(self):
         self.hashes.fix_keys_for_outline()
         for n, example in enumerate(self.hashes):
-            scenario = self.Scenario(outline=(self.outline, example))
+            scenario = self.Scenario(outline=(self.outline, example), tags=self.pending_tags)
             title = '%s %d %s' % (scenario.title, n + 1, self.examples)
             scenario_method = self.make_scenario_method_name(title)
             self.Feature.add_scenario(scenario_method, scenario)
         self.hashes = None
+        self.pending_tags = None
     
     def start_step(self, kind, statement):
         self.step = kind, statement
@@ -117,6 +125,12 @@ class Handler(object):
     def data(self, data):
         if self.lines is not None:
             self.lines.append(data)
+    
+    def tags(self, *tags):
+        if self.pending_tags is None:
+            self.pending_tags = set(tags)
+        else:
+            self.pending_tags |= set(tags)
     
     def whitespace(self, data):
         self.data(data)

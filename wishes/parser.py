@@ -48,7 +48,7 @@ class Parser(object):
     def _compile_patterns(self, patterns):
         for key, value in patterns.iteritems():
             yield key, re.compile(value)
-
+    
     @classmethod
     def parser_info(cls):
         events = set()
@@ -210,6 +210,10 @@ class Parser(object):
     def get_hash_line_parts(self):
         line = self.match.group(1).rstrip('|')
         return tuple(part.strip() for part in line.split('|'))
+    
+    def tags(self):
+        tags = tuple(tag[1:] for tag in self.match.group(1).strip().split())
+        self.handler.tags(*tags)
     
     def stripped_groups(self):
         return tuple(arg.strip() for arg in self.match.groups())

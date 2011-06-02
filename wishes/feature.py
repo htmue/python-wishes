@@ -7,6 +7,11 @@ import re
 import threading
 
 
+try:
+    from autocheck.tags import add_tags, get_tags
+except ImportError:
+    add_tags = get_tags = None
+
 __unittest = True
 
 class World(threading.local):
@@ -19,6 +24,11 @@ world = World()
 class FeatureTest(object):
     scenarios = dict()
     
+    def __init__(self, *args, **kwargs):
+        super(FeatureTest, self).__init__(*args, **kwargs)
+        if add_tags is not None and not self.is_empty and self.scenario.tags is not None:
+            add_tags(self, self.scenario.tags)
+    
     def runTest(self):
         if self.is_empty:
             self.skipTest('no scenarios defined')
@@ -28,6 +38,7 @@ class FeatureTest(object):
     
     def run(self, result=None):
         self.result = result
+        self.current_tags = getattr(result, 'tags', None)
         super(FeatureTest, self).run(result)
     
     def shortDescription(self):
@@ -99,8 +110,10 @@ class Hashes(object):
 
 class Scenario(object):
     
-    def __init__(self, title=None, background=None, outline=None):
+    def __init__(self, title=None, background=None, outline=None, tags=None):
         self.background = background
+        self.tags = tags
+        self.add_tags_from_parent(background)
         if outline is not None:
             self.outline, self.example = outline
             background_outline = self.outline.background
@@ -111,9 +124,17 @@ class Scenario(object):
                 )
             self.title = fill_from_example(self.outline.title, self.example)
             self.create_steps_from_outline()
+            self.add_tags_from_parent(self.outline)
         else:
             self.title = title
             self.steps = []
+    
+    def add_tags_from_parent(self, parent):
+        if parent is not None and parent.tags is not None:
+            if self.tags is None:
+                self.tags = parent.tags
+            else:
+                self.tags = set(self.tags) | parent.tags
     
     def run(self, feature):
         if not self.steps:
