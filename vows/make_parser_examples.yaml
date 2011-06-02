@@ -1,0 +1,237 @@
+# -*- coding:utf-8 -*-
+# Created by Hans-Thomas on 2011-06-02.
+#=============================================================================
+#   make_parser_examples.yaml --- Parser vows examlpes input
+#=============================================================================
+
+templates:
+  - &Feature |
+    Feature: {}
+  - &Description |
+    some lines
+    of description
+  - &Scenario |
+    Scenario: {}
+  - &Background |
+    Background: {}
+  - &Outline |
+    Scenario Outline: {}
+  - &Examples |
+    Examples: {}
+  - &Scenarios |
+    Scenarios: {}
+  - &Given |
+    Given {}
+  - &When |
+    When {}
+  - &Then |
+    Then {}
+  - &And |
+    And {}
+  - &But |
+    But {}
+  - &Multiline
+    "\"\"\"\n"
+  - &Multilinedata
+    "  random text\n"
+  - &Hashline
+    "| {0} | {1} | {2} | {3} |\n"
+  - &Data |
+    {}
+  - &Tag |
+    @tag_0
+  - &Tags |
+    @tag_1 @tag_2
+  - &Comment |
+    # {}
+  - &White
+    "\t \n"  
+  - &Null
+
+setup:
+  start: []
+  feature:
+    - *Feature
+  description: &DescriptionSetup
+    - *Feature
+    - *Description
+  tags: &TagsSetup
+    - *Feature
+    - *Tag
+  scenario: &ScenarioSetup
+    - *Feature
+    - *Scenario
+  step: &StepSetup
+    - *ScenarioSetup
+    - *Given
+  multiline: &MultilineSetup
+    - *StepSetup
+    - *Multiline
+  hash: &HashSetup
+    - *StepSetup
+    - *Hashline
+  background: &BackgroundSetup
+    - *Feature
+    - *Background
+  background_step: &BackgroundStepSetup
+    - *BackgroundSetup
+    - *Given
+  background_multiline: &BackgroundMultilineSetup
+    - *BackgroundStepSetup
+    - *Multiline
+  background_hash: &BackgroundHashSetup
+    - *BackgroundStepSetup
+    - *Hashline
+  outline: &OutlineSetup
+    - *Feature
+    - *Outline
+  outline_step: &OutlineStepSetup
+    - *OutlineSetup
+    - *Given
+  outline_multiline: &OutlineMultilineSetup
+    - *OutlineStepSetup
+    - *Multiline
+  outline_hash: &OutlineHashSetup
+    - *OutlineStepSetup
+    - *Hashline
+  examples: &ExamplesSetup
+    - *OutlineSetup
+    - *Examples
+  examples_hash: &ExamplesHashSetup
+    - *ExamplesSetup
+    - *Hashline
+
+finish:
+  background:
+    any: [*Scenario]
+  comment:
+    background: [*Scenario]
+    background_hash: [*Scenario]
+    background_step: [*Scenario]
+    examples: [*Hashline]
+    outline: [*Examples, *Hashline]
+    outline_hash: [*Examples, *Hashline]
+    outline_step: [*Examples, *Hashline]
+    start: [*Feature]
+    tags: [*Scenario]
+  examples:
+    any: [*Hashline]
+  hash:
+    background_hash: [*Scenario]
+    background_step: [*Scenario]
+    outline_hash: [*Examples, *Hashline]
+    outline_step: [*Examples, *Hashline]
+  multiline:
+    any: [*Multiline]
+    background_step: [*Multiline, *Scenario]
+    outline_step: [*Multiline, *Examples, *Hashline]
+  multiline_data:
+    any: [*Multiline]
+    background_multiline: [*Multiline, *Scenario]
+    outline_multiline: [*Multiline, *Examples, *Hashline]
+  multiline_end:
+    background_multiline: [*Scenario]
+    outline_multiline: [*Examples, *Hashline]
+  outline:
+    any: [*Examples, *Hashline]
+  step:
+    background: [*Scenario]
+    background_hash: [*Scenario]
+    background_step: [*Scenario]
+    outline: [*Examples, *Hashline]
+    outline_hash: [*Examples, *Hashline]
+    outline_step: [*Examples, *Hashline]
+  tags:
+    any: [*Scenario]
+    start: [*Feature]
+
+events:
+  null: []
+  feature: [*Feature]
+  description: [*Description]
+  scenario: [*Scenario]
+  background: [*Background]
+  outline: [*Outline]
+  examples: [*Examples, *Scenarios]
+  step: [*Given, *When, *Then, *And, *But]
+  multiline: [*Multiline]
+  multiline_data: [*Multilinedata]
+  multiline_end: [*Multiline]
+  hash: [*Hashline]
+  tags: [*Tag, *Tags]
+  comment: [*Comment]
+  whitespace: [*White]
+
+skip:
+- [background, multiline_end]
+- [background_multiline, background]
+- [background_multiline, comment]
+- [background_multiline, description]
+- [background_multiline, examples]
+- [background_multiline, feature]
+- [background_multiline, hash]
+- [background_multiline, multiline]
+- [background_multiline, outline]
+- [background_multiline, step]
+- [background_multiline, scenario]
+- [background_multiline, tags]
+- [background_step, multiline_data]
+- [background_step, multiline_end]
+- [description, examples]
+- [description, background]
+- [description, feature]
+- [description, hash]
+- [description, multiline]
+- [description, multiline_data]
+- [description, multiline_end]
+- [description, step]
+- [examples, multiline_data]
+- [examples, multiline_end]
+- [examples_hash, multiline_data]
+- [examples_hash, multiline_end]
+- [hash, multiline_data]
+- [hash, multiline_end]
+- [feature, examples]
+- [feature, feature]
+- [feature, hash]
+- [feature, multiline]
+- [feature, multiline_data]
+- [feature, multiline_end]
+- [feature, step]
+- [multiline, background]
+- [multiline, comment]
+- [multiline, description]
+- [multiline, examples]
+- [multiline, feature]
+- [multiline, hash]
+- [multiline, multiline]
+- [multiline, outline]
+- [multiline, scenario]
+- [multiline, step]
+- [multiline, tags]
+- [outline, multiline_data]
+- [outline, multiline_end]
+- [outline_hash, multiline_data]
+- [outline_hash, multiline_end]
+- [outline_multiline, background]
+- [outline_multiline, comment]
+- [outline_multiline, description]
+- [outline_multiline, examples]
+- [outline_multiline, feature]
+- [outline_multiline, hash]
+- [outline_multiline, multiline]
+- [outline_multiline, outline]
+- [outline_multiline, step]
+- [outline_multiline, scenario]
+- [outline_multiline, tags]
+- [outline_step, multiline_data]
+- [outline_step, multiline_end]
+- [scenario, multiline_data]
+- [scenario, multiline_end]
+- [start, multiline_data]
+- [start, multiline_end]
+- [tags, multiline_data]
+- [tags, multiline_end]
+
+#.............................................................................
+#   make_parser_examples.yaml

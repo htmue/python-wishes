@@ -163,14 +163,17 @@ class Parser(object):
     def finish_step(self):
         self.handler.finish_step()
     
-    def start_feature_description(self):
-        self.handler.start_feature_description()
+    def start_description(self):
+        self.handler.start_description()
     
-    def finish_feature_description(self):
-        self.handler.finish_feature_description()
+    def finish_description(self):
+        self.handler.finish_description()
     
     def data(self):
         self.handler.data(*self.stripped_groups())
+    
+    def comment(self):
+        self.handler.comment(self.match.string.lstrip())
     
     def whitespace(self):
         self.handler.whitespace(self.match.string)

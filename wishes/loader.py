@@ -51,10 +51,10 @@ class Handler(object):
     def finish_feature(self):
         self.suite = unittest.defaultTestLoader.loadTestsFromTestCase(self.Feature)
     
-    def start_feature_description(self):
+    def start_description(self):
         self.lines = []
     
-    def finish_feature_description(self):
+    def finish_description(self):
         self.Feature.description = ''.join(self.lines)
         self.lines = None
     

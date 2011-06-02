@@ -4,6 +4,7 @@
 #   test_parser.py --- Wishes parser vows
 #=============================================================================
 import os.path
+import re
 from cStringIO import StringIO
 from functools import partial
 
@@ -22,7 +23,7 @@ class ParserCallbackVowsMeta(type):
     def __new__(self, classname, bases, classdict):
         for key, test in test_data['callbacks'].iteritems():
             if 'input' in test and 'callbacks' in test:
-                define_method(classdict, test, 'test_' + key.replace(' ', '_'))
+                define_method(classdict, test, 'test_can_' + key.replace(' ', '_'))
         return type.__new__(self, classname, bases, classdict)
 
 def define_method(classdict, test, test_name):
@@ -34,7 +35,10 @@ def define_method(classdict, test, test_name):
 def parse_log_check(input, callbacks):
     handler = mock.Mock()
     parser = Parser(handler)
-    parser.parse(input.strip())
+    try:
+        parser.parse(input.strip())
+    except ParseError:
+        handler.parse_error()
     method_calls = [(name, tuple(args), kwargs) for name, args, kwargs in callbacks]
     handler.method_calls |should| each_be_equal_to(method_calls)
 
@@ -63,17 +67,6 @@ class ParserVows(unittest.TestCase):
               """
         '''.strip())
         parse |should| throw(ParseError)
-    
-    def test_tested_parsing_events_are_complete(self):
-        events, states, matchers = Parser.parser_info()
-        tested_events = set()
-        for test in test_data['callbacks'].values():
-            for state, matcher in test['tested_events']:
-                state |should| be_in(states)
-                matcher |should| be_in(matchers)
-                tested_events.add((state, matcher))
-        untested_events = events - tested_events
-        sorted(untested_events) |should| each_be_equal_to([])
     
     def test_containes_unreachable_transitions(self):
         reachable_transitions, possible_transitions = Parser.parser_transitions()
