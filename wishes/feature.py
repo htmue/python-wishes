@@ -21,16 +21,12 @@ class World(threading.local):
 
 class FeatureTest(object):
     scenarios = dict()
+    _world = None
     
     def __init__(self, *args, **kwargs):
         super(FeatureTest, self).__init__(*args, **kwargs)
         if add_tags is not None and not self.is_empty and self.scenario.tags is not None:
             add_tags(self, self.scenario.tags)
-    
-    def setUp(self):
-        global world
-        self.world = getattr(self, 'World', World)(self)
-        super(FeatureTest, self).setUp()
     
     def runTest(self):
         if self.is_empty:
@@ -44,6 +40,12 @@ class FeatureTest(object):
     
     def shortDescription(self):
         return 'Scenario: %s' % self.scenario.title
+    
+    @property
+    def world(self):
+        if self._world is None:
+            self._world = getattr(self, 'World', World)(self)
+        return self._world
     
     @property
     def is_empty(self):
