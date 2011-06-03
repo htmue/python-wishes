@@ -54,7 +54,7 @@ class Database(object):
     
     )
     
-    def __init__(self, path=None, basedir=None, name='.tests.db'):
+    def __init__(self, path=None, basedir=None, name='.autocheck.db'):
         if path is None:
             basedir = os.getcwd() if basedir is None else basedir
             self.path = os.path.join(basedir, name)
