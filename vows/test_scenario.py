@@ -9,7 +9,7 @@ import mock
 from should_dsl import should
 
 from wishes.compat import unittest
-from wishes.feature import Scenario, step, StepDefinition, world, StepDefinitionError
+from wishes.feature import Scenario, step, StepDefinition, StepDefinitionError
 
 
 class ScenarioVows(unittest.TestCase):
@@ -59,29 +59,29 @@ class ScenarioVows(unittest.TestCase):
     def test_can_run_steps(self, FeatureTest):
         @step('there is step ([0-9]+)')
         def there_is_step_number(step, number):
-            world.steps_run.append(int(number))
+            steps_run.append(int(number))
         feature = FeatureTest()
         scenario = Scenario('Test scenario')
         for i in range(3):
             scenario.add_step('Given', 'there is step %d' % i)
-        world.steps_run = []
+        steps_run = []
         scenario.run(feature)
-        world.steps_run |should| each_be_equal_to(range(3))
+        steps_run |should| each_be_equal_to(range(3))
     
     @mock.patch('wishes.feature.FeatureTest')
     def test_stops_at_the_first_undefined_step(self, FeatureTest):
         @step('there is step ([0-9]+)')
         def there_is_step_number(step, number):
-            world.steps_run.append(int(number))
+            steps_run.append(int(number))
         feature = FeatureTest()
         scenario = Scenario('Test scenario')
         for i in range(3):
             scenario.add_step('Given', 'there is step %d' % i)
         scenario.add_step('And', 'there is an undefined step')
         scenario.add_step('Given', 'there is step %d' % 4)
-        world.steps_run = []
+        steps_run = []
         scenario.run(feature)
-        world.steps_run |should| each_be_equal_to(range(3))
+        steps_run |should| each_be_equal_to(range(3))
     
     def test_can_add_multiline_step(self):
         scenario = Scenario('Test scenario')

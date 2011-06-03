@@ -7,7 +7,7 @@ import mock
 from should_dsl import should
 
 from wishes.compat import unittest
-from wishes.feature import FeatureTest, step, StepDefinition, world, World
+from wishes.feature import FeatureTest, step, StepDefinition, World
 from wishes.loader import load_feature
 
 
@@ -108,7 +108,7 @@ class FeatureVows(unittest.TestCase):
     def test_can_run_feature_with_multiline_step(self):
         @step('multiline step')
         def multiline_step(step):
-            world.multiline = step.multiline
+            my_world.multiline = step.multiline
         feature = load_feature('''
         Feature: with multiline scenarnio
           Scenario: with multiline step
@@ -117,19 +117,20 @@ class FeatureVows(unittest.TestCase):
               multiline content
               """
         ''')
-        world.multiline = None
+        my_world = World()
+        my_world.multiline = None
         result = unittest.TestResult()
         
         feature.run(result)
         
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
-        world.multiline |should| be_equal_to('multiline content\n')
+        my_world.multiline |should| be_equal_to('multiline content\n')
     
     def test_can_run_feature_with_hashes_step(self):
         @step('step with hashes')
         def step_with_hashes(step):
-            world.hashes = step.hashes
+            my_world.hashes = step.hashes
         feature = load_feature('''
         Feature: with multiline scenarnio
           Scenario: with multiline step
@@ -138,14 +139,15 @@ class FeatureVows(unittest.TestCase):
               | first 1 | second 1  | third 1   |
               | first 2 | second 2  | third 2   |
         ''')
-        world.hashes = None
+        my_world = World()
+        my_world.hashes = None
         result = unittest.TestResult()
         
         feature.run(result)
         
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
-        list(world.hashes) |should| each_be_equal_to([
+        list(my_world.hashes) |should| each_be_equal_to([
             dict(first='first 1', second='second 1', third='third 1'),
             dict(first='first 2', second='second 2', third='third 2'),
         ])
@@ -153,7 +155,7 @@ class FeatureVows(unittest.TestCase):
     def test_can_run_feature_with_hashes_in_background_step(self):
         @step('step with hashes')
         def step_with_hashes(step):
-            world.hashes = step.hashes
+            my_world.hashes = step.hashes
         @step('here it is')
         def here_it_is(step):
             pass
@@ -167,14 +169,15 @@ class FeatureVows(unittest.TestCase):
           Scenario: with defined step
             And here it is
         ''')
-        world.hashes = None
+        my_world = World()
+        my_world.hashes = None
         result = unittest.TestResult()
         
         feature.run(result)
         
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
-        world.hashes |should| each_be_equal_to([
+        my_world.hashes |should| each_be_equal_to([
             dict(first='first 1', second='second 1', third='third 1'),
             dict(first='first 2', second='second 2', third='third 2'),
         ])
@@ -366,10 +369,10 @@ class FeatureVows(unittest.TestCase):
     def test_clears_world_between_scenarios(self):
         @step('set a world var')
         def set_world(step):
-            world.var = 'set'
+            step.world.var = 'set'
         @step('check that world var')
         def check_var(step):
-            getattr(world, 'var', None) |should| be(None)
+            getattr(step.world, 'var', None) |should| be(None)
         feature = load_feature('''
         Feature: clears world between scenarios
           Scenario: first
@@ -387,8 +390,8 @@ class FeatureVows(unittest.TestCase):
     def test_makes_itself_accessible_through_world(self):
         @step('feature attribute is set to "(.*)"')
         def feature_attribute(step, name):
-            world.feature |should| be_instance_of(FeatureTest)
-            world.feature.__class__.__name__ |should| be_equal_to(name)
+            step.world.feature |should| be_instance_of(FeatureTest)
+            step.world.feature.__class__.__name__ |should| be_equal_to(name)
         feature = load_feature('''
         Feature: accessible through world
           Scenario: test
@@ -408,7 +411,7 @@ class FeatureVows(unittest.TestCase):
             World = MyWorld
         @step('world is an instance of the MyWorld class')
         def world_is_instance_of(step):
-            world |should| be_instance_of(MyWorld)
+            step.world |should| be_instance_of(MyWorld)
         feature = load_feature('''
         Feature: custom world class
           Scenario: test

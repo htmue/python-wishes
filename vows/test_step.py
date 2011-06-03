@@ -6,7 +6,7 @@
 from should_dsl import should
 
 from wishes.compat import unittest
-from wishes.feature import Step, step, StepDefinition, world, Hashes, World
+from wishes.feature import Step, step, StepDefinition, Hashes, World
 
 
 class StepVows(unittest.TestCase):
@@ -41,11 +41,12 @@ class StepVows(unittest.TestCase):
     def test_passes_capture_groups_to_definition(self):
         @step('this is (.*)')
         def this_is_captured(step, capture):
-            world.capture = capture
+            my_world.capture = capture
         step_ = Step('Given', 'this is captured')
-        world.capture = None
+        my_world = World()
+        my_world.capture = None
         step_.run()
-        world.capture |should| be_equal_to('captured')
+        my_world.capture |should| be_equal_to('captured')
     
     def test_can_fill_itself_from_example(self):
         outline_step = Step('Given', 'an <outlined> step')

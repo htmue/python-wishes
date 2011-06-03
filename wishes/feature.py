@@ -18,8 +18,6 @@ class World(threading.local):
     def __init__(self, feature=None):
         self.feature = feature
 
-world = World()
-
 
 class FeatureTest(object):
     scenarios = dict()
@@ -29,11 +27,14 @@ class FeatureTest(object):
         if add_tags is not None and not self.is_empty and self.scenario.tags is not None:
             add_tags(self, self.scenario.tags)
     
+    def setUp(self):
+        global world
+        self.world = getattr(self, 'World', World)(self)
+        super(FeatureTest, self).setUp()
+    
     def runTest(self):
         if self.is_empty:
             self.skipTest('no scenarios defined')
-        global world
-        world = getattr(self, 'World', World)(self)
         self.scenario.run(self)
     
     def run(self, result=None):
@@ -158,7 +159,9 @@ class Scenario(object):
                 feature.skipTest('pending %d step(s): %s' % (self.step_count_undefined, self.undefined_steps))
                 return
             try:
+                step.world = feature.world
                 step.run()
+                step.world = None
             except feature.failureException:
                 if addStepFailure is not None:
                     addStepFailure(step)
@@ -292,7 +295,6 @@ class StepDefinition(object):
         return self.pattern.search(s)
     
     def __call__(self, step):
-        self.definition.func_globals['world'] = world
         self.definition(step, *step.match.groups())
 
 
