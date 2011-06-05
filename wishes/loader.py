@@ -133,6 +133,9 @@ class Handler(object):
         else:
             self.pending_tags |= set(tags)
     
+    def comment(self, data):
+        pass
+    
     def whitespace(self, data):
         self.data(data)
     

@@ -167,6 +167,13 @@ class LoaderVows(unittest.TestCase):
         test_case = iter(feature).next()
         test_case.description |should| be_equal_to('With description')
 
+    def test_loads_feature_with_comment(self):
+        feature = loader.load_feature('''
+        # comment
+        Feature: Load feature file
+        ''')
+        len(list(feature)) |should| be(1)
+
 
 @unittest.skipIf(get_tags is None, 'get_tags() not available')
 class TagLoaderVows(unittest.TestCase):
