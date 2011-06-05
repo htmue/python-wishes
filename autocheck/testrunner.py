@@ -26,7 +26,7 @@ def camel_to_underscore(value):
     def camel_to_underscore():
         yield value[0]
         for c, d in zip(value[1:], value[2:]+'_'):
-            if c.isupper() and not d.isupper():
+            if c.isupper() and not (d == '_' or d.isupper()):
                 yield '_'
                 yield c.lower()
             else:
