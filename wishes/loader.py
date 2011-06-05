@@ -40,6 +40,7 @@ class Handler(object):
         class Feature(FeatureTest, self.TestCase):
             pass
         Feature.__name__ = self.make_feature_name(title)
+        Feature.title = title
         if add_tags is not None and self.pending_tags is not None:
             add_tags(Feature, self.pending_tags)
             self.pending_tags = None

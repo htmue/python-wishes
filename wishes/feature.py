@@ -39,7 +39,10 @@ class FeatureTest(object):
         super(FeatureTest, self).run(result)
     
     def shortDescription(self):
-        return 'Scenario: %s' % self.scenario.title
+        if self.is_empty:
+            return 'Feature: {0}'.format(self.title)
+        else:
+            return 'Scenario: {0}'.format(self.scenario.title)
     
     @property
     def world(self):

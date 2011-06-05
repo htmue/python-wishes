@@ -424,6 +424,11 @@ class FeatureVows(unittest.TestCase):
         result.testsRun |should| be(1)
         result.wasSuccessful() |should| be(True)
 
+    def test_has_shortDescription_when_empty(self):
+        feature = load_feature('Feature: empty')
+        test = iter(feature).next()
+        
+        test.shortDescription() |should| be_equal_to('Feature: empty')
 
 #.............................................................................
 #   test_feature.py
