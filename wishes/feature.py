@@ -5,6 +5,7 @@
 #=============================================================================
 import re
 import threading
+import inspect
 
 
 try:
@@ -66,6 +67,9 @@ class FeatureTest(object):
     def add_scenario(cls, methodName, scenario):
         setattr(cls, methodName, cls.runTest)
         cls.scenarios[methodName] = scenario
+    
+    def getsource(self):
+        return self.shortDescription() if self.is_empty else self.scenario.getsource()
 
 
 def fill_from_example(string, example):
@@ -212,6 +216,18 @@ class Scenario(object):
     def undefined_steps(self):
         return filter(lambda step: step.is_undefined, self.steps)
 
+    def getsourcebits(self):
+        if self.background is not None:
+            for bit in self.background.getsourcebits():
+                yield bit
+        yield unicode(self.title)
+        for step in self.steps:
+            for bit in step.getsourcebits():
+                yield bit
+
+    def getsource(self):
+        return u'\n'.join(self.getsourcebits()).encode('utf-8')
+
 
 class Step(object):
     
@@ -223,7 +239,7 @@ class Step(object):
         self.hashes = Hashes() if hashes is None else hashes
     
     def __unicode__(self):
-        return self.decode('utf-8')
+        return str(self).decode('utf-8')
     
     def __str__(self):
         return ('%s %s' % (self.kind, self.text)).encode('utf-8')
@@ -250,7 +266,15 @@ class Step(object):
         multilines = [fill_from_example(line, example) for line in self.multilines]
         return Step(self.kind, fill_from_example(self.text, example),
             multilines=multilines, hashes=self.hashes.fill_from_example(example))
-
+    
+    def getsourcebits(self):
+        yield unicode(self)
+        for line in self.multilines:
+            yield line
+        if self.hashes:
+            yield u'|'.join(self.hashes.keys)
+            for line in self.hashes.values:
+                yield u'|'.join(line)
 
 class StepDefinitionError(Exception):
     pass
@@ -301,6 +325,9 @@ class StepDefinition(object):
     
     def __call__(self, step):
         self.definition(step, *step.match.groups())
+    
+    def getsourcebits(self):
+        return self.pattern.pattern, inspect.getsource(self.definition)
 
 
 def define_step(pattern, definition):
