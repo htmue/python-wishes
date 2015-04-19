@@ -3,6 +3,8 @@
 #=============================================================================
 #   test_scenario.py --- Wishes scenario vows
 #=============================================================================
+from __future__ import unicode_literals
+
 from functools import partial
 
 import mock
@@ -23,7 +25,7 @@ class ScenarioVows(unittest.TestCase):
         scenario = Scenario('Test scenario')
         scenario.run(feature)
         len(feature.method_calls) |should| be(1)
-        feature.skipTest |should| be_called_once_with('no steps defined')
+        feature.skipTest.assert_called_once_with('no steps defined')
     
     def test_can_add_steps(self):
         scenario = Scenario('Test scenario')
@@ -136,7 +138,7 @@ class ScenarioVows(unittest.TestCase):
         scenario = Scenario('Test scenario')
         scenario.add_step('Given', 'there is a step')
         scenario.run(feature)
-        feature.skipTest |should| be_called_once_with('pending 1 step(s): [<Given there is a step>]')
+        feature.skipTest.assert_called_once_with('pending 1 step(s): [<Given there is a step>]')
     
     def test_can_be_created_with_tags(self):
         tags = ['wip', 'fast']

@@ -3,8 +3,11 @@
 #=============================================================================
 #   test_loader.py --- Feature test loader vows
 #=============================================================================
+from __future__ import unicode_literals
+
 from functools import partial
 
+import six
 from should_dsl import should
 
 from wishes import loader
@@ -20,14 +23,14 @@ class LoaderVows(unittest.TestCase):
     
     def test_returns_test_suite_consisting_of_TestCase_instances(self):
         feature = loader.load_feature('Feature:')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         test_case |should| be_instance_of(unittest.TestCase)
     
     def test_can_use_custom_TestCase_subclass(self):
         class MyTestCase(unittest.TestCase):
             pass
         feature = loader.load_feature('Feature:', test_case_class=MyTestCase)
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         test_case |should| be_instance_of(MyTestCase)
     
     def test_rejects_custom_test_case_class_that_is_not_TestCase_subclass(self):
@@ -45,13 +48,13 @@ class LoaderVows(unittest.TestCase):
     
     def test_generates_class_name_from_feature_title(self):
         feature = loader.load_feature('Feature: With a Title')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         class_name = test_case.__class__.__name__
         class_name |should| be_equal_to('Feature_With_a_Title')
     
     def test_can_handle_special_characters_in_titles(self):
         feature = loader.load_feature('Feature: Für-wahr!')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         class_name = test_case.__class__.__name__
         class_name |should| be_equal_to('Feature_Fur_wahr')
     
@@ -78,7 +81,7 @@ class LoaderVows(unittest.TestCase):
         Feature: Load feature file
           Scenario: Has a nice Title
         ''')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         scenario_method = test_case._testMethodName
         scenario_method |should| be_equal_to('test_Scenario_Has_a_nice_Title')
     
@@ -87,7 +90,7 @@ class LoaderVows(unittest.TestCase):
         Feature: Load feature file
           Scenario: Has a nice Title
         ''')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         test_case.scenario.title |should| be_equal_to('Has a nice Title')
     
     def test_can_use_custom_scenario_class(self):
@@ -97,7 +100,7 @@ class LoaderVows(unittest.TestCase):
         Feature: Load feature file
           Scenario: pending
         ''', scenario_class=MyScenario)
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         test_case.scenario |should| be_instance_of(MyScenario)
     
     def test_rejects_custom_scenario_class_that_is_not_Scenario_subclass(self):
@@ -164,7 +167,7 @@ class LoaderVows(unittest.TestCase):
             With description
           Scenario: pending
         ''')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         test_case.description |should| be_equal_to('With description')
 
     def test_loads_feature_with_comment(self):
@@ -185,7 +188,7 @@ class TagLoaderVows(unittest.TestCase):
         Feature: features can have tags
           Scenario: with tags
         ''')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         tags = get_tags(test_case)
         sorted(tags) |should| each_be_equal_to(['tag_1', 'tag_2', 'tag_3'])
     
@@ -196,7 +199,7 @@ class TagLoaderVows(unittest.TestCase):
           @tag_3
           Scenario: with tags
         ''')
-        test_case = iter(feature).next()
+        test_case = six.next(iter(feature))
         tags = get_tags(test_case)
         sorted(tags) |should| each_be_equal_to(['tag_1', 'tag_2', 'tag_3'])
     

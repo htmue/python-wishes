@@ -3,9 +3,13 @@
 #=============================================================================
 #   feature.py --- Feature test case
 #=============================================================================
+from __future__ import unicode_literals
+
 import re
 import threading
 import inspect
+
+import six
 
 
 try:
@@ -73,7 +77,7 @@ class FeatureTest(object):
 
 
 def fill_from_example(string, example):
-    for key, value in example.iteritems():
+    for key, value in six.iteritems(example):
         string = string.replace(key, value)
     return string
 
@@ -210,11 +214,11 @@ class Scenario(object):
     
     @property
     def defined_steps(self):
-        return filter(lambda step: step.is_defined, self.steps)
+        return list(filter(lambda step: step.is_defined, self.steps))
     
     @property
     def undefined_steps(self):
-        return filter(lambda step: step.is_undefined, self.steps)
+        return list(filter(lambda step: step.is_undefined, self.steps))
 
     def getsourcebits(self):
         if self.background is not None:
@@ -229,6 +233,7 @@ class Scenario(object):
         return u'\n'.join(self.getsourcebits()).encode('utf-8')
 
 
+@six.python_2_unicode_compatible
 class Step(object):
     
     def __init__(self, kind, text, multilines=None, hashes=None):
@@ -238,11 +243,8 @@ class Step(object):
         self.multilines = [] if multilines is None else multilines
         self.hashes = Hashes() if hashes is None else hashes
     
-    def __unicode__(self):
-        return str(self).decode('utf-8')
-    
     def __str__(self):
-        return ('%s %s' % (self.kind, self.text)).encode('utf-8')
+        return ('%s %s' % (self.kind, self.text))
     
     def __repr__(self):
         return '<%s>' % self

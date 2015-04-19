@@ -3,7 +3,10 @@
 #=============================================================================
 #   test_feature.py --- Wishes feature vows
 #=============================================================================
+from __future__ import unicode_literals
+
 import mock
+import six
 from should_dsl import should
 
 from wishes.compat import unittest
@@ -426,7 +429,7 @@ class FeatureVows(unittest.TestCase):
 
     def test_has_shortDescription_when_empty(self):
         feature = load_feature('Feature: empty')
-        test = iter(feature).next()
+        test = six.next(iter(feature))
         
         test.shortDescription() |should| be_equal_to('Feature: empty')
 

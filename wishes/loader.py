@@ -3,12 +3,16 @@
 #=============================================================================
 #   loader.py --- Feature loader
 #=============================================================================
+from __future__ import unicode_literals
+
 import re
 import unicodedata
 
-from compat import unittest
-from feature import FeatureTest, Scenario, Hashes, add_tags
-from parser import Parser
+import six
+
+from .compat import unittest
+from .feature import FeatureTest, Scenario, Hashes, add_tags
+from .parser import Parser
 
 
 class Handler(object):
@@ -140,18 +144,18 @@ class Handler(object):
         self.data(data)
     
     def make_feature_name(self, title):
-        return 'Feature_' + slugify(title)
+        return str('Feature_' + slugify(title))
     
     def make_scenario_method_name(self, title):
-        return 'test_Scenario_' + slugify(title)
+        return str('test_Scenario_' + slugify(title))
     
     def make_example_name(self, title):
-        return 'Example_' + slugify(title)
+        return str('Example_' + slugify(title))
 
 def slugify(value):
-    value = unicodedata.normalize('NFKD', value.decode('utf-8')).encode('ascii', 'ignore')
+    value = unicodedata.normalize('NFKD', six.text_type(value)).encode('ascii', 'ignore').decode('ascii')
     value = re.sub('[^\w\s-]', '', value).strip()
-    return re.sub('[-\s]+', '_', value)
+    return six.text_type(re.sub('[-\s]+', '_', value))
 
 
 class Loader(object):

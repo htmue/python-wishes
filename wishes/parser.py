@@ -3,14 +3,17 @@
 #=============================================================================
 #   parser.py --- Parse features
 #=============================================================================
+from __future__ import print_function, unicode_literals
+
 import os.path
 import re
 import sys
-from cStringIO import StringIO
 
 import yaml
+import six
+from io import StringIO
 
-from compat import combinations_with_replacement
+from .compat import combinations_with_replacement
 
 
 class ParseError(Exception):
@@ -28,7 +31,7 @@ class Parser(object):
         self.current_state = None
     
     def _compile_states(self, states):
-        for key, rows in states.iteritems():
+        for key, rows in six.iteritems(states):
             yield key, tuple(self._compile_transitions(rows))
     
     def _compile_transitions(self, rows):
@@ -46,7 +49,7 @@ class Parser(object):
             yield matcher, transitions, next_state
     
     def _compile_patterns(self, patterns):
-        for key, value in patterns.iteritems():
+        for key, value in six.iteritems(patterns):
             yield key, re.compile(value)
     
     @classmethod
@@ -114,7 +117,7 @@ class Parser(object):
         raise ParseError('unexpected line %r in %r, expected on of %s' % (line, self.current_state, expected))
     
     def start_parse(self, stream):
-        if isinstance(stream, basestring):
+        if isinstance(stream, six.text_type):
             self.stream = StringIO(stream)
         else:
             self.stream = stream
@@ -226,7 +229,7 @@ class LogHandler(object):
     
     def __getattr__(self, key):
         def log(*args):
-            print '%s:%s' % (key, args)
+            print('%s:%s' % (key, args))
         return log
 
 #.............................................................................
