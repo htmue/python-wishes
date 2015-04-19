@@ -1,3 +1,4 @@
 /.autocheck.db
 /dist/
 /MANIFEST
+.tox
